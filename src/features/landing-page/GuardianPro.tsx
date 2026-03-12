@@ -68,7 +68,7 @@ export default function GuardianPro() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.4, delay: 0.1 * i, ease: 'easeOut' }}
+            transition={{ duration: 0.5, delay: 0.3 * i, ease: 'easeOut' }}
             className="rounded-2xl border-2 border-blue-100 bg-gradient-to-br from-white/75 to-[#B3D1FD] backdrop-blur-sm p-5"
           >
             <div className="mb-3 flex h-10 w-10">{feature.icon}</div>

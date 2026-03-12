@@ -1,13 +1,28 @@
+import { useEffect, useState } from 'react'
 import { Moon, Wallet } from 'lucide-react'
 
 export default function Navbar() {
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 10)
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
   return (
-    <div className="w-full border flex justify-between items-center border-white/50 rounded-2xl bg-white/20 backdrop-blur-sm p-4 mb-6">
+    <div
+      className={`fixed top-6 left-20 right-20 z-50 max-w-7xl mx-auto flex justify-between items-center rounded-2xl p-4 transition-all duration-300 ${
+        scrolled
+          ? 'border border-white/50 bg-white/20 backdrop-blur-sm'
+          : 'border border-transparent bg-transparent'
+      }`}
+    >
       <div className="flex items-center gap-2">
         <img src="/logo.png" alt="Logo" className="h-8 w-8" />
         <span className="text-stone font-bold text-xl">Jogo</span>
       </div>
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-10">
         <p className="text-slate">Features</p>
         <p className="text-slate">Pricing</p>
         <p className="text-slate">FAQs</p>

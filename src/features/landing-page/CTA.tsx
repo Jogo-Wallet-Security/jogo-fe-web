@@ -15,7 +15,7 @@ export default function CTA() {
           <br />
           today.
         </h2>
-        <p className="mt-4 mx-auto max-w-lg text-white/80 text-sm leading-relaxed">
+        <p className="mt-4 mx-auto max-w-lg text-white/40 text-sm leading-relaxed">
           Join thousands of users who trade with confidence. Get protected by the most advanced AI
           and community-driven security layer.
         </p>

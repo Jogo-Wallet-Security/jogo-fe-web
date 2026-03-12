@@ -45,13 +45,13 @@ export default function FAQ() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: 0.08 * i }}
-              className="rounded-xl border border-white/40 bg-white/30 backdrop-blur-sm overflow-hidden"
+              className="rounded-xl border border-white/40 bg-white/75 backdrop-blur-sm overflow-hidden"
             >
               <button
                 onClick={() => setOpenIndex(isOpen ? -1 : i)}
                 className="flex w-full items-center justify-between px-6 py-4 text-left hover:cursor-pointer"
               >
-                <span className="font-semibold text-stone text-sm">{faq.question}</span>
+                <span className="font-semibold text-stone text-lg">{faq.question}</span>
                 <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.25 }}>
                   <ChevronDown className="h-4 w-4 text-slate" />
                 </motion.div>
@@ -65,7 +65,9 @@ export default function FAQ() {
                     exit={{ height: 0, opacity: 0 }}
                     transition={{ duration: 0.25, ease: 'easeInOut' }}
                   >
-                    <p className="px-6 pb-4 text-sm text-slate leading-relaxed">{faq.answer}</p>
+                    <p className="px-6 pb-4 text-[16px] text-slate max-w-4xl leading-relaxed">
+                      {faq.answer}
+                    </p>
                   </motion.div>
                 )}
               </AnimatePresence>
