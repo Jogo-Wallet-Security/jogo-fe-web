@@ -47,7 +47,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages project create jogo-fe-landing --production-branch=main
+          command: pages project create jogo-fe-web --production-branch=main
         continue-on-error: true
 
       - name: Deploy to Cloudflare Pages
