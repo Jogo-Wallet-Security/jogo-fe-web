@@ -7,15 +7,24 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "format": "biome format --write ./src",
+    "format:check": "biome format ./src",
+    "preview": "vite preview",
+    "prepare": "lefthook install"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.1",
+    "lefthook": "^2.1.4",
+    "lucide": "^0.577.0",
+    "lucide-react": "^0.577.0",
+    "motion": "^12.36.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-router": "^7.13.1",
     "tailwindcss": "^4.2.1"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.4.6",
     "@eslint/js": "^9.39.1",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.7",

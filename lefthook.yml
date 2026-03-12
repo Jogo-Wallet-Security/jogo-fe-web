@@ -1,0 +1,11 @@
+pre-commit:
+  parallel: true
+  commands:
+    lint:
+      glob: "*.{ts,tsx}"
+      run: npx eslint --fix {staged_files}
+      stage_fixed: true
+    format:
+      glob: "*.{ts,tsx,json,css,html}"
+      run: npx biome format --write {staged_files}
+      stage_fixed: true
