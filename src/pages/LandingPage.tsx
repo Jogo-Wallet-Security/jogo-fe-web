@@ -1,4 +1,7 @@
+import { useEffect } from 'react'
 import { motion } from 'motion/react'
+import { useNavigate } from 'react-router'
+import { useAccount } from 'wagmi'
 import Navbar from '../layouts/Navbar'
 import centerImg from '../assets/images/landing-page/center.svg'
 import leftImg from '../assets/images/landing-page/left.svg'
@@ -12,6 +15,21 @@ import CTA from '../features/landing-page/CTA'
 import Footer from '../features/landing-page/Footer'
 
 export default function LandingPage() {
+  const { isConnected, isConnecting, isReconnecting } = useAccount()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (isConnected) {
+      navigate('/wallet-health')
+    }
+  }, [isConnected, navigate])
+
+  if (isConnecting || isReconnecting) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-[linear-gradient(to_right,#679EF8,#87B2F9,#769FF9,#AADEFD,#9FE1FA)]"></div>
+    )
+  }
+
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-[linear-gradient(to_right,#679EF8,#87B2F9,#769FF9,#AADEFD,#9FE1FA)] px-20 py-6">
       {/* Vertical fade to #D6E7FF */}
