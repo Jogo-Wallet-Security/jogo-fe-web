@@ -10,6 +10,10 @@
   /* Custom colors */
   --color-stone: #0f172a;
   --color-slate: #475569;
+
+  --max-width-8xl: 1320px;
+
+  --text-2xs: 12px;
 }
 
 :root {
