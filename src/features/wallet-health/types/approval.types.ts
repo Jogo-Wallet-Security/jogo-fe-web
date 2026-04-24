@@ -1,25 +1,76 @@
-export type RiskLevel = 'Critical' | 'High' | 'Medium' | 'Low' | 'None'
+export type RiskLevel = 'Safe' | 'Low' | 'High' | 'Critical'
+
+export interface SpenderMeta {
+  name: string
+  isVerified: boolean
+}
 
 export interface Approval {
-  id: string
-  contractName: string
-  contractAddress: string
+  spender: string
+  asset: string
+  assetType: string
   tokenName: string
   tokenSymbol: string
-  tokenIcon?: string
-  network: string
-  estimatedGasUSD: number
-  estimatedGasEth: number
+  allowance: string
+  isUnlimited: boolean
+  riskScore: number
   riskLevel: RiskLevel
-  riskReason?: string
-  dateApproved: string
-  allowance: string | 'Unlimited'
+  explanation: string
+  spenderMeta: SpenderMeta
+}
+
+export interface ApprovalsResponse {
+  approvals: Approval[]
+  totalActive: number
+  totalFiltered: number
+  totalAll: number
+  totalSafe: number
+  totalLow: number
+  totalHigh: number
+  totalCritical: number
+  page: number
+  perPage: number
+  totalPages: number
+  walletSecurityScore: number
+  grade: string
+  gradeColor: string
+  signals: string[]
 }
 
 export interface WalletScore {
-  score: number // 0-100
-  lastScanned: string
-  threatsBlocked: number
-  autoRevoked: number
-  sitesAnalyzed: number
+  walletSecurityScore: number
+  grade: string
+  gradeColor: string
+}
+
+export interface TotalFilter {
+  totalAll: number
+  totalSafe: number
+  totalLow: number
+  totalHigh: number
+  totalCritical: number
+}
+
+export interface ApprovalsParams {
+  address: string
+  chainId: number
+  riskLevel?: RiskLevel
+  search?: string
+  page?: number
+  perPage?: number
+}
+
+export interface RevokeEstimateParams {
+  owner: string
+  spender: string
+  asset: string
+  assetType: string
+  chainId: number
+}
+
+export interface RevokeEstimate {
+  gasEstimateEth: string
+  gasEstimateUSD: string
+  chainId: number
+  network: string
 }

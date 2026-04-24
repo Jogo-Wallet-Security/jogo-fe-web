@@ -1,13 +1,10 @@
-import { useWalletHealth } from '../hooks/useWalletHealth'
 import { Shield, ShieldOff, Search } from 'lucide-react'
 
 export function StatsBar() {
-  const { walletScore } = useWalletHealth()
-
   const stats = [
     {
       label: 'Threats Blocked',
-      value: walletScore.threatsBlocked,
+      value: 0,
       badge: '+2 this week',
       badgeBg: 'bg-green-100 text-green-600',
       icon: Shield,
@@ -16,7 +13,7 @@ export function StatsBar() {
     },
     {
       label: 'Permissions Revoked',
-      value: walletScore.autoRevoked,
+      value: 0,
       badge: 'Last 30 days',
       badgeBg: 'bg-slate-100 text-slate-500',
       icon: ShieldOff,
@@ -25,7 +22,7 @@ export function StatsBar() {
     },
     {
       label: 'Sites Analyzed',
-      value: walletScore.sitesAnalyzed.toLocaleString(),
+      value: 0,
       badge: '+5%',
       badgeBg: 'bg-green-100 text-green-600',
       icon: Search,
@@ -41,18 +38,20 @@ export function StatsBar() {
         return (
           <div
             key={i}
-            className="flex items-center justify-between rounded-2xl border border-white/50 bg-white/60 backdrop-blur-md shadow-sm p-5"
+            className="flex items-center justify-between rounded-2xl border border-white/50 bg-sky-frost backdrop-blur-md shadow-sm p-5"
           >
             <div>
               <p className="text-xs font-medium text-slate-500 mb-1">{stat.label}</p>
-              <p className="text-3xl font-bold text-slate-800">{stat.value}</p>
-              <span
-                className={`mt-1.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${stat.badgeBg}`}
-              >
-                {stat.badge}
-              </span>
+              <div className="flex gap-2">
+                <p className="text-3xl font-bold text-slate-800">{stat.value}</p>
+                <span
+                  className={`mt-1.5 inline-block rounded-full h-fit px-2.5 py-0.5 text-3xs font-semibold ${stat.badgeBg}`}
+                >
+                  {stat.badge}
+                </span>
+              </div>
             </div>
-            <div className={`rounded-2xl p-3 ${stat.iconBg}`}>
+            <div className={`rounded-full p-3 ${stat.iconBg}`}>
               <Icon className={stat.iconColor} size={22} />
             </div>
           </div>

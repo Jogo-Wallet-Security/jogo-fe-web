@@ -1,21 +1,23 @@
 import { motion } from 'motion/react'
-import { useWalletHealth } from '../hooks/useWalletHealth'
 import { AlertTriangle, ShieldOff } from 'lucide-react'
+import { useApprovalsStore } from '../store/approvalStore'
 
 export function WalletScoreGauge() {
-  const { walletScore, approvals } = useWalletHealth()
-  const score = walletScore.score
+  const walletScore = useApprovalsStore((state) => state.walletScore)
+  const filterCount = useApprovalsStore((state) => state.filterCount)
+  const score = walletScore.walletSecurityScore
 
   const scoreColor = score < 50 ? '#f97316' : score < 80 ? '#f59e0b' : '#10b981'
+  const statusLabel = score < 50 ? 'Attention Needed' : score < 80 ? 'Beware' : 'All Safe!'
   const strokeDasharray = `${score}, 100`
 
-  const criticalCount = approvals.filter((a) => a.riskLevel === 'Critical').length
-  const highCount = approvals.filter((a) => a.riskLevel === 'High').length
+  const criticalCount = filterCount.totalCritical
+  const highCount = filterCount.totalHigh
   const criticalPenalty = criticalCount * 15
   const highPenalty = highCount * 5
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <div className="flex flex-col rounded-3xl border border-white/40 bg-white/20 backdrop-blur-md shadow-sm  p-6 ">
         {/* Label */}
         <p className="text-xs font-semibold uppercase tracking-widest text-slate-600 text-center mb-4">
@@ -48,7 +50,7 @@ export function WalletScoreGauge() {
         </div>
 
         {/* Status label */}
-        <p className="text-center font-semibold text-slate-700 mb-1">Attention Needed</p>
+        <p className="text-center font-semibold text-slate-700 mb-1">{statusLabel}</p>
         <p className="text-center text-xs text-slate-500 mb-5 leading-relaxed">
           Your wallet security score is impacted by active approvals.
         </p>

@@ -1,7 +1,7 @@
 import { useWalletHealth } from '../hooks/useWalletHealth'
 import type { RiskLevel } from '../types'
 
-const FLITERS: (RiskLevel | 'All')[] = ['All', 'Critical', 'High', 'Medium', 'Low', 'None']
+const FLITERS: (RiskLevel | 'All')[] = ['All', 'Critical', 'High', 'Low']
 
 export function RiskFilterBar() {
   const { activeQualityFilter, setQualityFilter } = useWalletHealth()

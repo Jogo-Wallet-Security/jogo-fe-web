@@ -1,135 +1,282 @@
-import { useState } from 'react'
-import { useWalletHealth } from '../hooks/useWalletHealth'
-import type { HistoryEvent } from '../types'
-import { Search, SlidersHorizontal } from 'lucide-react'
+// import { useState } from 'react'
+// import { useWalletHealth } from '../hooks/useWalletHealth'
+// import {
+//   Search,
+//   ShieldAlert,
+//   ScanLine,
+//   Zap,
+// } from 'lucide-react'
 
-// const TABS: HistoryTab[] = ['All', 'Revoke Logs', 'Recent Scans']
+// // ─── Shared helpers ──────────────────────────────────────────────────────────
 
-const riskBadge: Record<string, string> = {
-  Critical: 'bg-red-100 text-red-600 border-red-200',
-  High: 'bg-orange-100 text-orange-600 border-orange-200',
-  Medium: 'bg-yellow-100 text-yellow-600 border-yellow-200',
-  Low: 'bg-green-100 text-green-600 border-green-200',
-  None: 'bg-slate-100 text-slate-500 border-slate-200',
-}
+// function RiskBadge({ level }: { level?: string }) {
+//   if (!level) return <span className="text-xs text-slate-400">—</span>
+//   return (
+//     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold risk-badge-${(level || 'None').toLowerCase()}`}>
+//       {level}
+//     </span>
+//   )
+// }
 
-function formatDate(iso: string) {
-  const d = new Date(iso)
-  return (
-    d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
-    ', ' +
-    d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-  )
-}
+// function formatDate(iso: string) {
+//   const d = new Date(iso)
+//   return (
+//     d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
+//     ', ' +
+//     d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+//   )
+// }
 
-export function HistoryLog() {
-  const { history, activeHistoryTab } = useWalletHealth()
-  const [search, setSearch] = useState('')
+// // ─── Generic Row Component ───────────────────────────────────────────────────
 
-  const filtered = history
-    .filter((h: HistoryEvent) => {
-      if (activeHistoryTab === 'Revoke Logs') return h.action === 'Revoke'
-      if (activeHistoryTab === 'Recent Scans') return h.action === 'Scan'
-      return true
-    })
-    .filter(
-      (h: HistoryEvent) =>
-        !search ||
-        h.protocol?.toLowerCase().includes(search.toLowerCase()) ||
-        h.description.toLowerCase().includes(search.toLowerCase()),
-    )
+// function getStatusColor(status: string) {
+//   const s = (status || '').toLowerCase()
+//   if (s.includes('blocked') || s.includes('drain') || s.includes('failed') || s.includes('critical')) return 'bg-red-500'
+//   if (s.includes('warn') || s.includes('medium') || s.includes('high')) return 'bg-orange-500'
+//   if (s.includes('success') || s.includes('rescue') || s.includes('low') || s.includes('safe') || s.includes('monit')) return 'bg-emerald-500'
+//   return 'bg-blue-500'
+// }
 
-  return (
-    <div className="rounded-2xl border border-white/50 bg-white/60 backdrop-blur-md shadow-sm p-6">
-      <h2 className="text-lg font-bold text-slate-800 mb-1">Recent Activity</h2>
+// function HistoryTableRow({
+//   iconChar,
+//   title,
+//   subtitle,
+//   actionText,
+//   subActionText,
+//   riskLevel,
+//   riskSubtext,
+//   dateIso,
+//   statusFlag,
+// }: {
+//   iconChar: string;
+//   title: string;
+//   subtitle: string;
+//   actionText: string;
+//   subActionText: string;
+//   riskLevel: string;
+//   riskSubtext?: string;
+//   dateIso: string;
+//   statusFlag: string;
+// }) {
+//   const dotColor = getStatusColor(statusFlag || riskLevel)
 
-      {/* Search + filter row */}
-      <div className="flex items-center gap-2 mt-4 mb-5">
-        <div className="flex-1 flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2">
-          <Search size={13} className="text-slate-400 flex-shrink-0" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search..."
-            className="flex-1 bg-transparent text-xs text-slate-700 outline-none placeholder:text-slate-400"
-          />
-        </div>
-        <button className="rounded-lg border border-slate-200 bg-white p-2 hover:bg-slate-50 transition-colors">
-          <SlidersHorizontal size={14} className="text-slate-500" />
-        </button>
-      </div>
+//   return (
+//     <div className="grid grid-cols-12 gap-4 py-4 items-center group hover:bg-white/40 transition-colors px-2 -mx-2 sm:px-4 sm:-mx-4 rounded-2xl">
+//       {/* Protocol / Site */}
+//       <div className="col-span-4 lg:col-span-3 flex items-center gap-3 min-w-0">
+//         <div className="relative w-10 h-10 flex items-center justify-center rounded-full bg-white shadow-sm shrink-0 border border-slate-100">
+//           <span className="text-lg font-bold text-slate-700">{iconChar}</span>
+//           <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white ${dotColor}`}></div>
+//         </div>
+//         <div className="min-w-0 flex-1">
+//           <p className="font-semibold text-slate-900 text-sm truncate">{title || 'Unknown'}</p>
+//           <p className="text-xs text-slate-500 truncate">{subtitle || '—'}</p>
+//         </div>
+//       </div>
 
-      {/* Table header */}
-      <div className="grid grid-cols-12 gap-2 pb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 border-b border-slate-200/60">
-        <div className="col-span-3">Protocol / Site</div>
-        <div className="col-span-3">Action</div>
-        <div className="col-span-2">Risk Assessment</div>
-        <div className="col-span-2">Date & Time</div>
-        <div className="col-span-2 text-right">Status</div>
-      </div>
+//       {/* Action */}
+//       <div className="col-span-4 lg:col-span-3 min-w-0">
+//         <p className="text-sm font-medium text-slate-700 truncate">{actionText || 'Interaction'}</p>
+//         <p className="text-xs text-slate-500 truncate">{subActionText || '—'}</p>
+//       </div>
 
-      {/* Rows */}
-      <div className="space-y-0">
-        {filtered.length === 0 ? (
-          <p className="text-center text-sm text-slate-400 py-8">No activity found.</p>
-        ) : (
-          filtered.map((item: HistoryEvent) => (
-            <div
-              key={item.id}
-              className="grid grid-cols-12 items-center gap-2 py-3 border-b border-slate-100 hover:bg-white/40 transition-colors"
-            >
-              <div className="col-span-3 flex items-center gap-2 min-w-0">
-                <div className="h-7 w-7 rounded-full bg-slate-200 flex-shrink-0 flex items-center justify-center text-[10px] font-bold text-slate-500">
-                  {item.protocol?.[0] ?? '?'}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-slate-800 truncate">
-                    {item.protocol ?? 'Unknown'}
-                  </p>
-                  <p className="text-[10px] text-slate-400 truncate">{item.site ?? '-'}</p>
-                </div>
-              </div>
-              <div className="col-span-3">
-                <p className="text-xs text-slate-600">{item.description}</p>
-              </div>
-              <div className="col-span-2">
-                {item.riskLevel ? (
-                  <span
-                    className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${riskBadge[item.riskLevel]}`}
-                  >
-                    {item.riskLevel} Risk
-                  </span>
-                ) : (
-                  <span className="text-xs text-slate-400">—</span>
-                )}
-              </div>
-              <div className="col-span-2">
-                <p className="text-[10px] text-slate-500">{formatDate(item.timestamp)}</p>
-              </div>
-              <div className="col-span-2 flex justify-end">
-                <button className="rounded-lg border border-slate-200 bg-white hover:bg-slate-50 px-2.5 py-1 text-[10px] font-semibold text-slate-600 transition-colors">
-                  Details
-                </button>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+//       {/* Risk Assessment */}
+//       <div className="col-span-4 lg:col-span-3 min-w-0">
+//         <div className="flex flex-col items-start gap-1">
+//           <RiskBadge level={riskLevel} />
+//           {riskSubtext && <p className="text-[10px] text-slate-400 truncate w-full">{riskSubtext}</p>}
+//         </div>
+//       </div>
 
-      {/* Pagination */}
-      <div className="mt-4 flex items-center justify-between text-xs text-slate-400 pt-3 border-t border-slate-100">
-        <span>
-          Showing 1–{filtered.length} of {history.length} results
-        </span>
-        <div className="flex gap-2">
-          <button className="rounded-lg border border-slate-200 px-3 py-1 hover:bg-slate-50 text-slate-600 transition-colors">
-            Previous
-          </button>
-          <button className="rounded-lg border border-slate-200 px-3 py-1 hover:bg-slate-50 text-slate-600 transition-colors">
-            Next
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
+//       {/* Date & Time */}
+//       <div className="hidden lg:block col-span-2 min-w-0">
+//         <p className="text-sm text-slate-500 truncate">{formatDate(dateIso)}</p>
+//       </div>
+
+//       {/* Status */}
+//       <div className="hidden lg:flex col-span-1 justify-end shrink-0">
+//         <button className="px-3 py-1.5 bg-white rounded-lg border border-slate-200 shadow-[0px_1px_2px_#0000000d] text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
+//           Details
+//         </button>
+//       </div>
+//     </div>
+//   )
+// }
+
+// const TAB_CONFIG = [
+//   { key: 'Revoke Logs' as const, label: 'Revoke Logs', Icon: ShieldAlert },
+//   { key: 'Recent Scans' as const, label: 'Recent Scans', Icon: ScanLine },
+//   { key: 'Recent Thread' as const, label: 'Recent Threats', Icon: Zap },
+// ]
+
+// export function HistoryLog() {
+//   const { revokeLogs, scanLogs, threatLogs, activeHistoryTab, setHistoryTab } = useWalletHealth()
+//   const [search, setSearch] = useState('')
+
+//   const filteredRevoke = revokeLogs.filter(
+//     (r) =>
+//       !search ||
+//       r.tokenContract.toLowerCase().includes(search.toLowerCase()) ||
+//       r.triggerReason.toLowerCase().includes(search.toLowerCase()),
+//   )
+
+//   const filteredScans = scanLogs.filter(
+//     (s) =>
+//       !search ||
+//       s.protocol.toLowerCase().includes(search.toLowerCase()) ||
+//       s.actionDetected.toLowerCase().includes(search.toLowerCase()),
+//   )
+
+//   const filteredThreats = threatLogs.filter(
+//     (t) =>
+//       !search ||
+//       t.incidentTitle.toLowerCase().includes(search.toLowerCase()) ||
+//       t.threatType.toLowerCase().includes(search.toLowerCase()),
+//   )
+
+//   // Map to common standard
+//   const renderRows = () => {
+//     if (activeHistoryTab === 'Revoke Logs') {
+//       if (filteredRevoke.length === 0) return <p className="text-slate-400 text-sm py-10 text-center">No revoke logs found.</p>
+//       return filteredRevoke.map(r => (
+//         <HistoryTableRow
+//           key={r.id}
+//           iconChar={r.tokenContract[0]?.toUpperCase() || '?'}
+//           title={r.tokenContract}
+//           subtitle={`Safe: ${r.safeWallet || '—'}`}
+//           actionText={r.triggerReason}
+//           subActionText={`Method: ${r.revokeMethod}`}
+//           riskLevel={r.riskLevel || 'None'}
+//           riskSubtext={`Value at Risk: ${r.valueAtRisk}`}
+//           dateIso={r.timestamp}
+//           statusFlag={r.revokeStatus}
+//         />
+//       ))
+//     }
+//     if (activeHistoryTab === 'Recent Scans') {
+//       if (filteredScans.length === 0) return <p className="text-slate-400 text-sm py-10 text-center">No scan logs found.</p>
+//       return filteredScans.map(s => (
+//         <HistoryTableRow
+//           key={s.id}
+//           iconChar={s.protocol[0]?.toUpperCase() || '?'}
+//           title={s.protocol}
+//           subtitle={s.site}
+//           actionText={s.actionDetected}
+//           subActionText={`Scope: ${s.approvalScope || '—'}`}
+//           riskLevel={s.riskLevel || 'None'}
+//           riskSubtext={`Score: ${s.riskScore}/100`}
+//           dateIso={s.timestamp}
+//           statusFlag={s.userAction}
+//         />
+//       ))
+//     }
+//     if (activeHistoryTab === 'Recent Thread') {
+//       if (filteredThreats.length === 0) return <p className="text-slate-400 text-sm py-10 text-center">No threat logs found.</p>
+//       return filteredThreats.map(t => (
+//         <HistoryTableRow
+//           key={t.id}
+//           iconChar={t.incidentTitle[0]?.toUpperCase() || '!'}
+//           title={t.incidentTitle}
+//           subtitle={t.targetToken}
+//           actionText={t.threatType}
+//           subActionText={t.responseTaken}
+//           riskLevel={t.riskLevel || 'None'}
+//           riskSubtext={`Confidence: ${t.confidenceScore}%`}
+//           dateIso={t.timestamp}
+//           statusFlag={t.outcome}
+//         />
+//       ))
+//     }
+//     return null
+//   }
+
+//   const currentCount = activeHistoryTab === 'Revoke Logs' ? filteredRevoke.length : activeHistoryTab === 'Recent Scans' ? filteredScans.length : filteredThreats.length
+//   const totalCount = activeHistoryTab === 'Revoke Logs' ? revokeLogs.length : activeHistoryTab === 'Recent Scans' ? scanLogs.length : threatLogs.length
+
+//   return (
+//     <div className="flex flex-col lg:flex-row w-full lg:min-h-[600px] items-stretch relative rounded-3xl overflow-hidden border border-white/40 bg-sky-frost shadow-md text-left">
+
+//       {/* Sidebar Section */}
+//       <div className="flex flex-col w-full lg:w-64 items-start gap-2 p-6 bg-white/40 border-b lg:border-b-0 lg:border-r border-white/20 backdrop-blur-md shrink-0">
+//         <div className="pb-4 w-full">
+//           <div className="font-semibold text-slate-400 text-xs tracking-widest uppercase">
+//             History Log
+//           </div>
+//         </div>
+//         <div className="flex flex-row lg:flex-col gap-2 w-full overflow-x-auto pb-2 lg:pb-0">
+//           {TAB_CONFIG.map(({ key, label, Icon }) => {
+//             const isActive = activeHistoryTab === key
+//             return (
+//               <button
+//                 key={key}
+//                 onClick={() => setHistoryTab(key)}
+//                 className={`w-full flex items-center justify-center lg:justify-start gap-3 px-4 py-3 rounded-2xl transition-all whitespace-nowrap shrink-0 ${isActive
+//                   ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20'
+//                   : 'text-slate-600 hover:bg-white/50'
+//                   }`}
+//               >
+//                 <Icon size={16} className={isActive ? "text-white" : "text-slate-500"} />
+//                 <span className="font-medium text-sm">{label}</span>
+//               </button>
+//             )
+//           })}
+//         </div>
+//       </div>
+
+//       {/* Main Table Section */}
+//       <div className="flex flex-col flex-1 min-w-0 p-6 sm:p-8">
+
+//         {/* Header */}
+//         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+//           <h2 className="text-xl font-semibold text-slate-800 whitespace-nowrap">Recent Activity</h2>
+
+//           <div className="flex items-center gap-2">
+//             <div className="flex items-center gap-2 rounded-xl bg-white/50 px-4 py-2 w-full sm:w-64 border border-white focus-within:border-blue-200 focus-within:ring-2 focus-within:ring-blue-50 transition-all shadow-sm">
+//               <Search size={14} className="text-slate-400 flex-shrink-0" />
+//               <input
+//                 value={search}
+//                 onChange={(e) => setSearch(e.target.value)}
+//                 placeholder="Search..."
+//                 className="flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
+//               />
+//             </div>
+//           </div>
+//         </div>
+
+//         {/* Unified Table */}
+//         <div className="flex-1 flex flex-col min-h-[300px]">
+
+//           {/* Table Header */}
+//           <div className="grid grid-cols-12 gap-4 pb-3 border-b border-slate-200 text-xs font-medium text-slate-500 tracking-widest uppercase">
+//             <div className="col-span-4 lg:col-span-3 pl-2 sm:pl-4">Protocol / Site</div>
+//             <div className="col-span-4 lg:col-span-3">Action</div>
+//             <div className="col-span-4 lg:col-span-3">Risk Assessment</div>
+//             <div className="hidden lg:block col-span-2">Date & Time</div>
+//             <div className="hidden lg:block col-span-1 text-right pr-2 sm:pr-4">Status</div>
+//           </div>
+
+//           {/* Rows Container */}
+//           <div className="flex-col flex divide-y divide-slate-100/50 mt-1">
+//             {renderRows()}
+//           </div>
+//         </div>
+
+//         {/* Pagination Footer */}
+//         <div className="flex items-center justify-between pt-5 mt-auto border-t border-slate-200 w-full">
+//           <p className="text-sm text-slate-500">
+//             Showing <span className="font-medium text-slate-900">1-{currentCount}</span> of <span className="font-medium text-slate-900">{totalCount}</span> results
+//           </p>
+//           <div className="flex items-center gap-2">
+//             <button className="px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors bg-white">
+//               Previous
+//             </button>
+//             <button className="px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors bg-white">
+//               Next
+//             </button>
+//           </div>
+//         </div>
+
+//       </div>
+//     </div>
+//   )
+// }

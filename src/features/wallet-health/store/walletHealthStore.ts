@@ -21,7 +21,6 @@ const calculateScore = (approvals: Approval[]): number => {
   approvals.forEach((app) => {
     if (app.riskLevel === 'Critical') penalty += 15
     if (app.riskLevel === 'High') penalty += 5
-    if (app.riskLevel === 'Medium') penalty += 2
   })
   return Math.max(0, Math.min(100, 100 - penalty))
 }
@@ -30,7 +29,7 @@ export const useWalletHealthStore = create<WalletHealthState>((set) => ({
   walletScore: { ...mockWalletScore, score: calculateScore(mockApprovals) },
   approvals: mockApprovals,
   history: mockHistory,
-  activeHistoryTab: 'All',
+  activeHistoryTab: 'Revoke Logs',
   activeQualityFilter: 'All',
   isScanning: false,
 

@@ -9,7 +9,6 @@ export function useWalletHealth() {
   )
 
   const filteredHistory = store.history.filter((hist) => {
-    if (store.activeHistoryTab === 'All') return true
     if (store.activeHistoryTab === 'Revoke Logs') return hist.action === 'Revoke'
     if (store.activeHistoryTab === 'Recent Scans') return hist.action === 'Scan'
     return true

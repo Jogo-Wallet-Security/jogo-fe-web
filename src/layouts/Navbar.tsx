@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router'
+import { useNavigate, useLocation } from 'react-router'
 import { Moon, Wallet, LogOut } from 'lucide-react'
 import { useDisconnect } from 'wagmi'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
@@ -9,6 +9,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [showLogoutModal, setShowLogoutModal] = useState(false)
   const navigate = useNavigate()
+  const location = useLocation()
   const { disconnect } = useDisconnect()
 
   useEffect(() => {
@@ -42,32 +43,32 @@ export default function Navbar() {
                   <>
                     <button
                       onClick={() => navigate('/wallet-health')}
-                      className="cursor-pointer flex items-center gap-1.5 text-slate hover:text-blue-500 transition-colors"
+                      className={`cursor-pointer flex items-center gap-1.5 transition-colors ${location.pathname.includes('/wallet-health') ? 'text-stone font-bold' : 'text-slate hover:text-stone hover:font-bold'}`}
                     >
                       Wallet Health
                     </button>
                     <button
                       onClick={() => navigate('/mempool')}
-                      className="cursor-pointer flex items-center gap-1.5 text-slate hover:text-blue-500 transition-colors"
+                      className={`cursor-pointer flex items-center gap-1.5 transition-colors ${location.pathname.includes('/mempool') ? 'text-stone font-bold' : 'text-slate hover:text-stone hover:font-bold'}`}
                     >
                       Mempool Monitor
                     </button>
                     <button
                       onClick={() => navigate('/settings')}
-                      className="cursor-pointer flex items-center gap-1.5 text-slate hover:text-blue-500 transition-colors"
+                      className={`cursor-pointer flex items-center gap-1.5 transition-colors ${location.pathname.includes('/settings') ? 'text-stone font-bold' : 'text-slate hover:text-stone hover:font-bold'}`}
                     >
                       Settings
                     </button>
                   </>
                 ) : (
                   <>
-                    <p className="text-slate cursor-pointer hover:text-blue-500 transition-colors">
+                    <p className="text-slate font-medium cursor-pointer hover:text-stone hover:font-bold transition-colors">
                       Features
                     </p>
-                    <p className="text-slate cursor-pointer hover:text-blue-500 transition-colors">
+                    <p className="text-slate font-medium cursor-pointer hover:text-stone hover:font-bold transition-colors">
                       Pricing
                     </p>
-                    <p className="text-slate cursor-pointer hover:text-blue-500 transition-colors">
+                    <p className="text-slate font-medium cursor-pointer hover:text-stone hover:font-bold transition-colors">
                       FAQs
                     </p>
                   </>
@@ -77,7 +78,7 @@ export default function Navbar() {
               {/* Right side actions */}
               <div className="flex items-center gap-4">
                 <Moon
-                  className="text-slate cursor-pointer hover:text-blue-500 transition-colors"
+                  className="text-slate cursor-pointer hover:text-stone transition-colors"
                   size={20}
                 />
                 {connected ? (
