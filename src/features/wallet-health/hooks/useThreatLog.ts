@@ -1,63 +1,160 @@
-import { useRef, useCallback } from 'react'
+import { useRef, useCallback, useEffect } from 'react'
 import { fetchThreatLog } from '../api/threadLogApi'
-import type { ThreatLogParams } from '../types'
+import type { ThreatLogEvent, ThreatLogEventType, HistoryTab, ThreatLogParams } from '../types'
 import { useThreatLogStore } from '../store/threatLogStore'
 
-export function useThreatLog(params: ThreatLogParams | null) {
-  const { data, loading, error, setData, setLoading, setError } = useThreatLogStore()
+export interface UseThreatLogBaseParams {
+  wallet: string
+  chainId: number
+}
 
-  const paramsRef = useRef(params)
-  paramsRef.current = params
+export function useThreatLog(baseParams: UseThreatLogBaseParams | null = null) {
+  const {
+    revokeLogs,
+    scanLogs,
+    threatLogs,
+    loadingRevoke,
+    loadingScan,
+    loadingThreat,
+    errorRevoke,
+    errorScan,
+    errorThreat,
+    activeHistoryTab,
+    setRevokeLogs,
+    setScanLogs,
+    setThreatLogs,
+    setLoadingRevoke,
+    setLoadingScan,
+    setLoadingThreat,
+    setErrorRevoke,
+    setErrorScan,
+    setErrorThreat,
+    setActiveHistoryTab,
+    setTotalThreatLog,
+  } = useThreatLogStore()
 
-  const controllerRef = useRef<AbortController | null>(null)
+  const paramsRef = useRef(baseParams)
+  paramsRef.current = baseParams
 
-  const run = useCallback(async () => {
+  // One AbortController per event type
+  const revokeCtrl = useRef<AbortController | null>(null)
+  const scanCtrl = useRef<AbortController | null>(null)
+  const threatCtrl = useRef<AbortController | null>(null)
+
+  // ── Generic fetch helper ──────────────────────────────────────────────────
+  async function fetchForType<T extends ThreatLogEventType>(
+    eventType: T,
+    ctrl: React.MutableRefObject<AbortController | null>,
+    setLoading: (v: boolean) => void,
+    setError: (v: string | null) => void,
+    setData: (logs: ThreatLogEvent<T>[]) => void,
+  ) {
     if (!paramsRef.current) return
-
-    controllerRef.current?.abort()
+    ctrl.current?.abort()
     const controller = new AbortController()
-    controllerRef.current = controller
+    ctrl.current = controller
     const { signal } = controller
 
     setLoading(true)
     setError(null)
 
     try {
-      const resp = await fetchThreatLog(paramsRef.current, signal)
-      setData(resp)
-      //   setWalletScore({
-      //     walletSecurityScore: resp.walletSecurityScore,
-      //     grade: resp.grade,
-      //     gradeColor: resp.gradeColor,
-      //   })
-      //   setFilterCount({
-      //     totalAll: resp.totalAll,
-      //     totalSafe: resp.totalSafe,
-      //     totalLow: resp.totalLow,
-      //     totalHigh: resp.totalHigh,
-      //     totalCritical: resp.totalCritical,
-      //   })
+      const params: ThreatLogParams = { ...paramsRef.current, eventType }
+      const resp = await fetchThreatLog(params, signal)
+      // Cast: the API filters by eventType so every event matches T
+      setData(resp.events as ThreatLogEvent<T>[])
+      setTotalThreatLog({
+        totalApprovalRevoked: resp.totalApprovalRevoked,
+        totalScanComplete: resp.totalScanComplete,
+        totalThreatDetected: resp.totalThreatDetected,
+      })
     } catch (err) {
       if ((err as Error).name === 'AbortError') return
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
       if (!signal.aborted) setLoading(false)
     }
-  }, [setData, setLoading, setError])
+  }
 
-  //   useEffect(() => {
-  //     if (!params) return
-  //     run()
-  //     return () => controllerRef.current?.abort()
-  //   }, [params?.address, params?.riskLevel, params?.search, params?.page, params?.perPage])
+  // ── Per-type refetch callbacks ────────────────────────────────────────────
+  const refetchRevoke = useCallback(
+    () =>
+      fetchForType('APPROVAL_REVOKED', revokeCtrl, setLoadingRevoke, setErrorRevoke, setRevokeLogs),
+    [setLoadingRevoke, setErrorRevoke, setRevokeLogs],
+  )
+
+  const refetchScan = useCallback(
+    () => fetchForType('SCAN_COMPLETE', scanCtrl, setLoadingScan, setErrorScan, setScanLogs),
+    [setLoadingScan, setErrorScan, setScanLogs],
+  )
+
+  const refetchThreat = useCallback(
+    () =>
+      fetchForType('THREAT_DETECTED', threatCtrl, setLoadingThreat, setErrorThreat, setThreatLogs),
+    [setLoadingThreat, setErrorThreat, setThreatLogs],
+  )
+
+  const fetchActiveTab = useCallback(() => {
+    if (activeHistoryTab === 'Revoke Logs') return refetchRevoke()
+    if (activeHistoryTab === 'Recent Scans') return refetchScan()
+    return refetchThreat()
+  }, [activeHistoryTab, refetchRevoke, refetchScan, refetchThreat])
+
+  // ── Fetch only the active tab on mount / changes ──────────────────────────
+  useEffect(() => {
+    if (!baseParams) return
+    fetchActiveTab()
+    return () => {
+      revokeCtrl.current?.abort()
+      scanCtrl.current?.abort()
+      threatCtrl.current?.abort()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [baseParams?.wallet, baseParams?.chainId, activeHistoryTab, fetchActiveTab])
+
+  // ── Tab navigation ────────────────────────────────────────────────────────
+  const setHistoryTab = useCallback(
+    (tab: HistoryTab) => {
+      setActiveHistoryTab(tab)
+    },
+    [setActiveHistoryTab],
+  )
 
   return {
-    data,
-    // filterCount,
-    // activeQualityFilter,
-    // setQualityFilter,
-    isLoading: loading,
-    error,
-    refetch: run,
+    // Data
+    revokeLogs,
+    scanLogs,
+    threatLogs,
+
+    // Per-type loading/error
+    loadingRevoke,
+    loadingScan,
+    loadingThreat,
+    errorRevoke,
+    errorScan,
+    errorThreat,
+
+    // Convenience: loading/error for the active tab
+    isLoading:
+      activeHistoryTab === 'Revoke Logs'
+        ? loadingRevoke
+        : activeHistoryTab === 'Recent Scans'
+          ? loadingScan
+          : loadingThreat,
+    error:
+      activeHistoryTab === 'Revoke Logs'
+        ? errorRevoke
+        : activeHistoryTab === 'Recent Scans'
+          ? errorScan
+          : errorThreat,
+
+    // Tab navigation
+    activeHistoryTab,
+    setHistoryTab,
+
+    // Manual refetch per type
+    refetchRevoke,
+    refetchScan,
+    refetchThreat,
   }
 }

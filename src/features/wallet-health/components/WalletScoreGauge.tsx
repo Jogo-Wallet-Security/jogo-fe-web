@@ -1,11 +1,16 @@
 import { motion } from 'motion/react'
 import { AlertTriangle, ShieldOff } from 'lucide-react'
 import { useApprovalsStore } from '../store/approvalStore'
+import {
+  selectFilterCountFromResponse,
+  selectWalletScoreFromResponse,
+} from '../selectors/approvalSelectors'
 
 export function WalletScoreGauge() {
-  const walletScore = useApprovalsStore((state) => state.walletScore)
-  const filterCount = useApprovalsStore((state) => state.filterCount)
-  const score = walletScore.walletSecurityScore
+  const data = useApprovalsStore((state) => state.data)
+  const walletScore = selectWalletScoreFromResponse(data)
+  const filterCount = selectFilterCountFromResponse(data)
+  const score = walletScore?.walletSecurityScore
 
   const scoreColor = score < 50 ? '#f97316' : score < 80 ? '#f59e0b' : '#10b981'
   const statusLabel = score < 50 ? 'Attention Needed' : score < 80 ? 'Beware' : 'All Safe!'
@@ -26,7 +31,7 @@ export function WalletScoreGauge() {
 
         {/* Gauge */}
         <div className="relative mx-auto mb-4 h-36 w-36">
-          <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90">
+          <svg viewBox="0 0 36 36" className="h-full w-full rotate-120">
             <path
               stroke="#e2e8f0"
               strokeWidth="3"

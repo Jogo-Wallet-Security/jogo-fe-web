@@ -1,13 +1,21 @@
+import {
+  ShieldX,
+  TriangleAlert,
+  CircleAlert,
+  CircleCheck,
+  Minus,
+  type LucideIcon,
+} from 'lucide-react'
 import type { RiskLevel } from './types'
 
 // ─── Risk Display ─────────────────────────────────────────────────────────────
 
-export const RISK_ICON: Record<RiskLevel | 'None', string> = {
-  Critical: '🛡️',
-  High: '⚠️',
-  Low: '🟡',
-  Safe: '✅',
-  None: '—',
+export const RISK_ICON: Record<RiskLevel | 'None', LucideIcon> = {
+  Critical: ShieldX,
+  High: TriangleAlert,
+  Low: CircleAlert,
+  Safe: CircleCheck,
+  None: Minus,
 }
 
 export const RISK_DOT_COLOR: Record<RiskLevel | 'All', string> = {

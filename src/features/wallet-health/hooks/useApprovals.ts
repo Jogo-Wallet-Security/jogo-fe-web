@@ -2,20 +2,18 @@ import { useEffect, useRef, useCallback } from 'react'
 import { useApprovalsStore } from '../store/approvalStore'
 import { fetchApprovals } from '../api/approvalsApi'
 import type { ApprovalsParams } from '../types/approval.types'
+import { selectFilterCountFromResponse } from '../selectors/approvalSelectors'
 
 export function useApprovals(params: ApprovalsParams | null) {
   const {
     data,
     loading,
     error,
-    filterCount,
     activeQualityFilter,
     setData,
     setLoading,
     setError,
-    setFilterCount,
     setQualityFilter,
-    setWalletScore,
   } = useApprovalsStore()
 
   const paramsRef = useRef(params)
@@ -37,18 +35,6 @@ export function useApprovals(params: ApprovalsParams | null) {
     try {
       const resp = await fetchApprovals(paramsRef.current, signal)
       setData(resp)
-      setWalletScore({
-        walletSecurityScore: resp.walletSecurityScore,
-        grade: resp.grade,
-        gradeColor: resp.gradeColor,
-      })
-      setFilterCount({
-        totalAll: resp.totalAll,
-        totalSafe: resp.totalSafe,
-        totalLow: resp.totalLow,
-        totalHigh: resp.totalHigh,
-        totalCritical: resp.totalCritical,
-      })
     } catch (err) {
       if ((err as Error).name === 'AbortError') return
       setError(err instanceof Error ? err.message : 'Unknown error')
@@ -65,7 +51,7 @@ export function useApprovals(params: ApprovalsParams | null) {
 
   return {
     data,
-    filterCount,
+    filterCount: selectFilterCountFromResponse(data),
     activeQualityFilter,
     setQualityFilter,
     isLoading: loading,

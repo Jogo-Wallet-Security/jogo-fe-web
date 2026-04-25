@@ -40,6 +40,9 @@ export interface ThreatLogResponse {
   page: number
   perPage: number
   totalPages: number
+  totalApprovalRevoked: number
+  totalScanComplete: number
+  totalThreatDetected: number
 }
 
 export interface ThreatLogParams {
@@ -48,4 +51,10 @@ export interface ThreatLogParams {
   eventType?: ThreatLogEventType | ''
   page?: number
   perPage?: number
+}
+
+export interface TotalThreatLogResponse {
+  totalApprovalRevoked: number
+  totalScanComplete: number
+  totalThreatDetected: number
 }

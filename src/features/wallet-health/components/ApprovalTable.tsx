@@ -1,16 +1,20 @@
 import { useState, useEffect } from 'react'
-import { useAccount } from 'wagmi'
-import { useWalletHealth } from '../hooks/useWalletHealth'
+import { useAccount, useChainId } from 'wagmi'
+// import { useWalletHealth } from '../hooks/useWalletHealth'
 import { useApprovals } from '../hooks/useApprovals'
 import { useApprovalsStore } from '../store/approvalStore'
 import type { Approval } from '../types/approval.types'
-import { Loader2, RotateCw, Search } from 'lucide-react'
 import { PAGE_OPTIONS, RISK_FILTERS, RISK_DOT_COLOR } from '../constants'
 import { ApprovalRowCard } from './ApprovalRowCard'
+import { DataListFooter } from './shared/DataListFooter'
+import { DataListHeaderRow } from './shared/DataListHeaderRow'
+import { DataListState } from './shared/DataListState'
+import { TableSearchInput } from './shared/TableSearchInput'
 
 export function ApprovalTable() {
   const { address } = useAccount()
-  const { rescanWallet, isScanning } = useWalletHealth()
+  const chainId = useChainId()
+  // const { rescanWallet, isScanning } = useWalletHealth()
 
   // ── Local UI state ──────────────────────────────────────────────────────────
   const [page, setPage] = useState(1)
@@ -25,16 +29,17 @@ export function ApprovalTable() {
 
   const activeQualityFilter = useApprovalsStore((s) => s.activeQualityFilter)
 
-  const params = address
-    ? {
-        address: import.meta.env.VITE_DUMMY_WALLET,
-        chainId: Number(import.meta.env.VITE_CHAIN_ID),
-        riskLevel: activeQualityFilter === 'All' ? undefined : activeQualityFilter,
-        search: debouncedSearch || undefined,
-        page,
-        perPage,
-      }
-    : null
+  const params =
+    address && chainId
+      ? {
+          address: import.meta.env.VITE_DUMMY_WALLET,
+          chainId: Number(import.meta.env.VITE_CHAIN_ID),
+          riskLevel: activeQualityFilter === 'All' ? undefined : activeQualityFilter,
+          search: debouncedSearch || undefined,
+          page,
+          perPage,
+        }
+      : null
 
   const { data, isLoading, error, filterCount, setQualityFilter } = useApprovals(params)
 
@@ -66,7 +71,7 @@ export function ApprovalTable() {
   return (
     <div className="lg:col-span-8 flex flex-col gap-3">
       {/* Rescan button */}
-      <div className="flex justify-end">
+      {/* <div className="flex justify-end">
         <button
           onClick={rescanWallet}
           disabled={isScanning}
@@ -75,7 +80,7 @@ export function ApprovalTable() {
           <RotateCw size={14} className={isScanning ? 'animate-spin' : ''} />
           {isScanning ? 'Scanning…' : 'Rescan Wallet'}
         </button>
-      </div>
+      </div> */}
 
       {/* Filter row — OUTSIDE the card */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -106,94 +111,95 @@ export function ApprovalTable() {
 
         {/* Search box */}
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 rounded-xl bg-white/50 px-4 py-2 w-full sm:w-64 border border-white focus-within:border-blue-200 focus-within:ring-2 focus-within:ring-blue-50 transition-all shadow-sm">
-            <Search size={14} className="text-slate-400 flex-shrink-0" />
-            <input
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value)
-                setPage(1)
-              }}
-              placeholder="Search token or spender…"
-              className="flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
-            />
-          </div>
+          <TableSearchInput
+            value={search}
+            onChange={(value) => {
+              setSearch(value)
+              setPage(1)
+            }}
+            placeholder="Search token or spender..."
+          />
         </div>
       </div>
 
       {/* Table card */}
       <div className="flex flex-col rounded-3xl border border-white/40 bg-white/20 backdrop-blur-md shadow-sm p-5 gap-2">
         {/* Column header */}
-        <div className="grid grid-cols-12 gap-3 px-4 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-600 border-b border-white/30">
-          <div className="col-span-4">Asset / Spender</div>
-          <div className="col-span-3">Risk Assessment</div>
-          <div className="col-span-3">Allowance</div>
-          <div className="col-span-2 text-right">Action</div>
-        </div>
+        <DataListHeaderRow
+          className="grid grid-cols-12 gap-3 px-4 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-600 border-b border-white/30"
+          columns={[
+            { key: 'token', label: 'Protocol / Asset', className: 'col-span-3' },
+            { key: 'action', label: 'Action', className: 'col-span-2' },
+            { key: 'risk', label: 'Risk Assessment', className: 'col-span-2' },
+            { key: 'date', label: 'Date & Time', className: 'col-span-2' },
+            { key: 'perform', label: '', className: 'col-span-3' },
+          ]}
+        />
 
         {/* Rows */}
         <div className="flex flex-col gap-2 min-h-[300px]">
-          {isLoading ? (
-            <div className="flex h-full min-h-[200px] items-center justify-center text-sm text-slate-400">
-              <Loader2 className="w-6 h-6 animate-spin text-slate-500 mr-2" />
-              Loading approvals...
-            </div>
-          ) : isError ? (
-            <div className="flex h-full min-h-[200px] items-center justify-center text-sm text-red-500">
-              Failed to load approvals. Please try again.
-            </div>
-          ) : approvalsList.length === 0 ? (
-            <div className="flex h-full min-h-[200px] items-center justify-center text-sm text-slate-400">
-              No approvals found for this filter.
-            </div>
-          ) : (
-            approvalsList.map((approval: Approval) => (
+          <DataListState
+            isLoading={isLoading}
+            error={isError ? 'Failed to load approvals. Please try again.' : null}
+            isEmpty={approvalsList.length === 0}
+            loadingText="Loading approvals..."
+            emptyText="No approvals found for this filter."
+          >
+            {approvalsList.map((approval: Approval) => (
               <ApprovalRowCard key={approval.asset} approval={approval} />
-            ))
-          )}
+            ))}
+          </DataListState>
         </div>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between text-xs text-slate-500 pt-3 mt-1 border-t border-white/30">
-          <div className="flex items-center gap-3">
-            <span>
-              Showing {totalItems === 0 ? 0 : startNum}–{endNum} of {totalItems} results
-            </span>
-            <div className="flex items-center gap-1.5 border-l border-white/30 pl-3">
-              <span className="text-slate-400">Per page:</span>
-              <select
-                value={perPage}
-                onChange={(e) => {
-                  setPerPage(Number(e.target.value))
-                  setPage(1)
-                }}
-                className="bg-transparent font-semibold text-slate-700 outline-none cursor-pointer hover:text-slate-900 transition-colors"
-              >
-                {PAGE_OPTIONS.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
+        <DataListFooter
+          className="flex items-center justify-between text-xs text-slate-500 pt-3 mt-1 border-t border-white/30"
+          start={totalItems === 0 ? 0 : startNum}
+          end={endNum}
+          total={totalItems}
+          onPrev={() => setPage((p) => Math.max(1, p - 1))}
+          onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+          canPrev={page > 1}
+          canNext={page < totalPages}
+          isLoading={isLoading}
+          rightSlot={
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 border-r border-white/30 pr-3">
+                <span className="text-slate-400">Per page:</span>
+                <select
+                  value={perPage}
+                  onChange={(e) => {
+                    setPerPage(Number(e.target.value))
+                    setPage(1)
+                  }}
+                  className="bg-transparent font-semibold text-slate-700 outline-none cursor-pointer hover:text-slate-900 transition-colors"
+                >
+                  {PAGE_OPTIONS.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1 || isLoading}
+                  className="rounded-lg border border-white/50 bg-white/40 px-3 py-1 hover:bg-white/60 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages || isLoading}
+                  className="rounded-lg border border-white/50 bg-white/40 px-3 py-1 hover:bg-white/60 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
             </div>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1 || isLoading}
-              className="rounded-lg border border-white/50 bg-white/40 px-3 py-1 hover:bg-white/60 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Previous
-            </button>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages || isLoading}
-              className="rounded-lg border border-white/50 bg-white/40 px-3 py-1 hover:bg-white/60 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Next
-            </button>
-          </div>
-        </div>
+          }
+        />
       </div>
     </div>
   )

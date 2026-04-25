@@ -1,6 +1,7 @@
 import { StatsBar } from './StatsBar'
 import { WalletScoreGauge } from './WalletScoreGauge'
 import { ApprovalTable } from './ApprovalTable'
+import { HistoryLog } from './HistoryLog'
 
 export function WalletHealthPage() {
   return (
@@ -35,7 +36,7 @@ export function WalletHealthPage() {
         </p>
 
         <StatsBar />
-        {/* <HistoryLog /> */}
+        <HistoryLog />
       </section>
     </div>
   )

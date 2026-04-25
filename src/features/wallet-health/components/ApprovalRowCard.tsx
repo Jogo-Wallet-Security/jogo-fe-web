@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAccount } from 'wagmi'
-import { useWalletHealth } from '../hooks/useWalletHealth'
+// import { useWalletHealth } from '../hooks/useWalletHealth'
 import { useRevokeEstimate } from '../hooks/useRevokeEstimate'
 import type { Approval } from '../types/approval.types'
 import { ConfirmationModal } from '../../../components/ui/ConfirmationModal'
@@ -9,7 +9,7 @@ import { RISK_ICON } from '../constants'
 
 export function ApprovalRowCard({ approval }: { approval: Approval }) {
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const { revokeApproval } = useWalletHealth()
+  // const { revokeApproval } = useWalletHealth()
   const { address } = useAccount()
 
   const {
@@ -33,40 +33,30 @@ export function ApprovalRowCard({ approval }: { approval: Approval }) {
       {/* Each row is its own glass card */}
       <div className="grid grid-cols-12 items-center gap-3 rounded-2xl border border-white/50 bg-white/40 backdrop-blur-sm shadow-sm px-4 py-3 hover:bg-white/60 transition-all">
         {/* Asset / Spender */}
-        <div className="col-span-4 flex items-center gap-3 min-w-0">
-          {/* <div className="relative flex-shrink-0">
-            {approval.tokenIcon ? (
-              <img
-                src={approval.tokenIcon}
-                className="h-9 w-9 rounded-full border border-white/60 shadow-sm"
-                alt=""
-                onError={(e) => {
-                  ; (e.target as HTMLImageElement).style.display = 'none'
-                }}
-              />
-            ) : (
-              <div className="h-9 w-9 rounded-full bg-slate-200" />
-            )}
-          </div> */}
-
+        <div className="col-span-3 flex items-center gap-3 min-w-0">
           <div className="min-w-0">
-            <p className="text-sm font-bold text-slate-800 truncate">{approval.tokenName}</p>
-            <p className="text-[11px] text-slate-500 truncate">{approval.tokenSymbol} Token</p>
+            <p className="text-sm font-semibold text-slate-800 truncate">{approval.tokenName}</p>
+            <p className="text-[11px] text-slate-500 truncate">{approval.assetType}</p>
           </div>
         </div>
 
+        <div className="col-span-2 flex items-center">-</div>
+
         {/* Risk Assessment */}
-        <div className="col-span-3 flex items-center">
+        <div className="col-span-2 flex items-center">
           <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold risk-badge-${(approval.riskLevel || 'None').toLowerCase()}`}
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium risk-badge-${(approval.riskLevel || 'None').toLowerCase()}`}
           >
-            <span>{RISK_ICON[approval.riskLevel]}</span>
+            {(() => {
+              const RiskIcon = RISK_ICON[approval.riskLevel || 'None']
+              return <RiskIcon size={14} />
+            })()}
             {approval.riskLevel} Risk
           </span>
         </div>
 
         {/* Allowance */}
-        <div className="col-span-3">
+        <div className="col-span-2">
           <p className="text-sm font-semibold text-slate-800">{approval.allowance}</p>
           {approval.explanation && (
             <p className="text-[10px] text-slate-400 truncate">{approval.explanation}</p>
@@ -91,7 +81,7 @@ export function ApprovalRowCard({ approval }: { approval: Approval }) {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onConfirm={() => {
-          revokeApproval(approval.spender, approval.asset)
+          // revokeApproval(approval.spender, approval.asset)
           setIsModalOpen(false)
         }}
         title="Revoke Approval"
@@ -109,9 +99,13 @@ export function ApprovalRowCard({ approval }: { approval: Approval }) {
                 </p>
               </div>
               <span
-                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold risk-badge-${(approval.riskLevel || 'None').toLowerCase()}`}
+                className={`inline-flex items-center gap-1 font-bold risk-badge-${(approval.riskLevel || 'None').toLowerCase()}`}
               >
-                {RISK_ICON[approval.riskLevel]} {approval.riskLevel}
+                {(() => {
+                  const RiskIcon = RISK_ICON[approval.riskLevel || 'None']
+                  return <RiskIcon size={12} />
+                })()}
+                {approval.riskLevel}
               </span>
             </div>
 

@@ -49,26 +49,26 @@ export default function Navbar() {
                     </button>
                     <button
                       onClick={() => navigate('/mempool')}
-                      className={`cursor-pointer flex items-center gap-1.5 transition-colors ${location.pathname.includes('/mempool') ? 'text-stone font-bold' : 'text-slate hover:text-stone hover:font-bold'}`}
+                      className={`cursor-pointer flex items-center gap-1.5 transition-colors ${location.pathname.includes('/mempool') ? 'text-stone font-bold' : 'text-slate hover:text-stone'}`}
                     >
                       Mempool Monitor
                     </button>
                     <button
                       onClick={() => navigate('/settings')}
-                      className={`cursor-pointer flex items-center gap-1.5 transition-colors ${location.pathname.includes('/settings') ? 'text-stone font-bold' : 'text-slate hover:text-stone hover:font-bold'}`}
+                      className={`cursor-pointer flex items-center gap-1.5 transition-colors ${location.pathname.includes('/settings') ? 'text-stone font-bold' : 'text-slate hover:text-stone'}`}
                     >
                       Settings
                     </button>
                   </>
                 ) : (
                   <>
-                    <p className="text-slate font-medium cursor-pointer hover:text-stone hover:font-bold transition-colors">
+                    <p className="text-slate font-medium cursor-pointer hover:text-stone transition-colors">
                       Features
                     </p>
-                    <p className="text-slate font-medium cursor-pointer hover:text-stone hover:font-bold transition-colors">
+                    <p className="text-slate font-medium cursor-pointer hover:text-stone transition-colors">
                       Pricing
                     </p>
-                    <p className="text-slate font-medium cursor-pointer hover:text-stone hover:font-bold transition-colors">
+                    <p className="text-slate font-medium cursor-pointer hover:text-stone transition-colors">
                       FAQs
                     </p>
                   </>
