@@ -1,15 +1,26 @@
 import { useState } from 'react'
 import { useAccount } from 'wagmi'
-// import { useWalletHealth } from '../hooks/useWalletHealth'
 import { useRevokeEstimate } from '../hooks/useRevokeEstimate'
+import { useRevokeApproval } from '../hooks/useRevokeApproval'
 import type { Approval } from '../types/approval.types'
 import { ConfirmationModal } from '../../../components/ui/ConfirmationModal'
-import { ShieldOff, Info, Loader2 } from 'lucide-react'
+import { ApprovalInfoModal } from './ApprovalInfoModal'
+import { ShieldOff, Info, Loader2, CheckCircle2, XCircle } from 'lucide-react'
 import { RISK_ICON } from '../constants'
+
+const STATUS_LABEL: Record<string, string> = {
+  idle: '',
+  preparing: 'Preparing transaction…',
+  'awaiting-wallet': 'Confirm in your wallet…',
+  mining: 'Transaction submitted, mining…',
+  logging: 'Recording revoke…',
+  success: 'Revoke successful!',
+  error: 'Revoke failed',
+}
 
 export function ApprovalRowCard({ approval }: { approval: Approval }) {
   const [isModalOpen, setIsModalOpen] = useState(false)
-  // const { revokeApproval } = useWalletHealth()
+  const [isInfoOpen, setIsInfoOpen] = useState(false)
   const { address } = useAccount()
 
   const {
@@ -28,6 +39,23 @@ export function ApprovalRowCard({ approval }: { approval: Approval }) {
       : null,
   )
 
+  const {
+    status,
+    error: revokeError,
+    revoke,
+    reset,
+  } = useRevokeApproval(approval, address, estimate, () => {
+    setTimeout(() => {
+      setIsModalOpen(false)
+      // eslint-disable-next-line react-hooks/immutability
+      reset()
+
+      window.location.reload()
+    }, 1500)
+  })
+
+  const isRevoking = status !== 'idle' && status !== 'success' && status !== 'error'
+
   return (
     <>
       {/* Each row is its own glass card */}
@@ -40,7 +68,9 @@ export function ApprovalRowCard({ approval }: { approval: Approval }) {
           </div>
         </div>
 
-        <div className="col-span-2 flex items-center">-</div>
+        <div className="col-span-2 flex items-center text-sm font-medium text-slate-700">
+          {approval.action || '-'}
+        </div>
 
         {/* Risk Assessment */}
         <div className="col-span-2 flex items-center">
@@ -56,8 +86,14 @@ export function ApprovalRowCard({ approval }: { approval: Approval }) {
         </div>
 
         {/* Allowance */}
-        <div className="col-span-2">
-          <p className="text-sm font-semibold text-slate-800">{approval.allowance}</p>
+        <div className="col-span-3">
+          <p className="text-sm font-semibold text-slate-800">
+            {approval.isUnlimited
+              ? 'Unlimited'
+              : approval.allowance?.length > 10
+                ? approval.allowance.slice(0, 10) + '...'
+                : approval.allowance}
+          </p>
           {approval.explanation && (
             <p className="text-[10px] text-slate-400 truncate">{approval.explanation}</p>
           )}
@@ -65,28 +101,48 @@ export function ApprovalRowCard({ approval }: { approval: Approval }) {
 
         {/* Action */}
         <div className="col-span-2 flex items-center justify-end gap-2">
-          <button className="rounded-full border border-slate-200 bg-white/60 p-1.5 text-slate-400 hover:text-slate-600 transition-colors">
+          <button
+            onClick={() => setIsInfoOpen(true)}
+            className="rounded-full border border-slate-200 bg-white/60 p-1.5 text-slate-400 hover:text-slate-600 transition-colors hover:cursor-pointer"
+          >
             <Info size={14} />
           </button>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="rounded-xl border border-slate-200 bg-white/60 hover:bg-white/90 px-3 py-1.5 text-xs font-semibold text-slate-700 transition-all"
+            className="rounded-xl border border-slate-200 bg-white/60 hover:bg-white/90 px-3 py-1.5 text-xs font-semibold text-slate-700 transition-all hover:cursor-pointer"
           >
             Revoke
           </button>
         </div>
       </div>
 
+      {/* Info Detail Modal */}
+      <ApprovalInfoModal
+        isOpen={isInfoOpen}
+        onClose={() => setIsInfoOpen(false)}
+        approval={approval}
+      />
+
+      {/* Revoke Confirmation Modal */}
       <ConfirmationModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onConfirm={() => {
-          // revokeApproval(approval.spender, approval.asset)
-          setIsModalOpen(false)
+        onClose={() => {
+          if (!isRevoking) {
+            setIsModalOpen(false)
+            reset()
+          }
         }}
+        onConfirm={revoke}
         title="Revoke Approval"
-        confirmText="Confirm Revoke"
+        confirmText={
+          isRevoking
+            ? STATUS_LABEL[status]
+            : status === 'success'
+              ? 'Revoke successful!'
+              : 'Confirm Revoke'
+        }
         confirmColor="red"
+        isConfirming={isRevoking || status === 'success'}
         icon={<ShieldOff size={16} />}
         description={
           <div className="space-y-3">
@@ -133,22 +189,18 @@ export function ApprovalRowCard({ approval }: { approval: Approval }) {
               <span
                 className={`font-semibold text-sm ${approval.isUnlimited ? 'text-red-500' : 'text-slate-800'}`}
               >
-                {approval.isUnlimited ? '∞ Unlimited' : approval.allowance}
+                {approval.isUnlimited
+                  ? '∞ Unlimited'
+                  : approval.allowance?.length > 10
+                    ? approval.allowance.slice(0, 10) + '...'
+                    : approval.allowance}
               </span>
             </div>
 
-            {/* Network — from estimate */}
+            {/* Network — from approval */}
             <div className="flex justify-between rounded-xl bg-white/50 p-4 border border-slate-100">
               <span className="text-sm text-slate-500">Network</span>
-              {estimateLoading ? (
-                <span className="flex items-center gap-1.5 text-slate-400">
-                  <Loader2 size={12} className="animate-spin" /> Loading…
-                </span>
-              ) : estimate ? (
-                <span className="font-medium text-slate-800">{estimate.network}</span>
-              ) : (
-                <span className="text-slate-400 text-xs">—</span>
-              )}
+              <span className="font-medium text-slate-800">{approval.chainName || 'Base'}</span>
             </div>
 
             {/* Gas Fee — from estimate */}
@@ -162,13 +214,35 @@ export function ApprovalRowCard({ approval }: { approval: Approval }) {
                 <span className="text-xs text-red-400">Could not estimate</span>
               ) : estimate ? (
                 <span className="font-bold text-slate-800">
-                  ${estimate.gasEstimateUSD}{' '}
-                  <span className="text-xs text-slate-400">({estimate.gasEstimateEth} ETH)</span>
+                  ${estimate.usdCost}{' '}
+                  <span className="text-xs text-slate-400">({estimate.ethCost} ETH)</span>
                 </span>
               ) : (
                 <span className="text-slate-400 text-xs">—</span>
               )}
             </div>
+
+            {/* Revoke Status Feedback */}
+            {status !== 'idle' && (
+              <div
+                className={`flex items-center gap-2 rounded-xl p-4 border text-sm font-medium ${
+                  status === 'success'
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                    : status === 'error'
+                      ? 'bg-red-50 border-red-200 text-red-600'
+                      : 'bg-blue-50 border-blue-200 text-blue-700'
+                }`}
+              >
+                {status === 'success' ? (
+                  <CheckCircle2 size={16} />
+                ) : status === 'error' ? (
+                  <XCircle size={16} />
+                ) : (
+                  <Loader2 size={16} className="animate-spin" />
+                )}
+                <span>{revokeError ?? STATUS_LABEL[status]}</span>
+              </div>
+            )}
           </div>
         }
       />

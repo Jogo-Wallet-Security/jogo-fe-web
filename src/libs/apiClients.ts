@@ -15,7 +15,7 @@ export class ApiError extends Error {
 
 // Global error interceptor
 function handleGlobalErrors(status: number) {
-  if (status === 401 || status === 403) {
+  if (status === 401) {
     // Clear session and disconnect wallet
     localStorage.removeItem('token')
     disconnect(wagmiConfig)
@@ -30,6 +30,17 @@ async function request<T>(
 ): Promise<T> {
   const { params, ...fetchOptions } = options ?? {}
 
+  const token = localStorage.getItem('token')
+  const headers = new Headers(fetchOptions.headers)
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`)
+  }
+
+  const finalOptions = {
+    ...fetchOptions,
+    headers,
+  }
+
   const url = new URL(`${BASE_URL}${endpoint}`)
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
@@ -39,7 +50,7 @@ async function request<T>(
 
   let res: Response
   try {
-    res = await fetch(url.toString(), fetchOptions)
+    res = await fetch(url.toString(), finalOptions)
   } catch (err) {
     // Let intentional cancellations bubble up as-is so callers can
     // detect AbortError and ignore it without showing an error state.

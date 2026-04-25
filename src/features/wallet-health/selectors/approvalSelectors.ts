@@ -17,7 +17,7 @@ const DEFAULT_WALLET_SCORE: WalletScore = {
 export function selectFilterCountFromResponse(data: ApprovalsResponse | null): TotalFilter {
   if (!data) return EMPTY_FILTER_COUNT
   return {
-    totalAll: data.totalAll,
+    totalAll: data.totalActive || 0,
     totalSafe: data.totalSafe,
     totalLow: data.totalLow,
     totalHigh: data.totalHigh,

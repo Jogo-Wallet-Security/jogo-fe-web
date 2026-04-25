@@ -32,7 +32,7 @@ export function ApprovalTable() {
   const params =
     address && chainId
       ? {
-          address: import.meta.env.VITE_DUMMY_WALLET,
+          address: address,
           chainId: Number(import.meta.env.VITE_CHAIN_ID),
           riskLevel: activeQualityFilter === 'All' ? undefined : activeQualityFilter,
           search: debouncedSearch || undefined,
@@ -131,8 +131,8 @@ export function ApprovalTable() {
             { key: 'token', label: 'Protocol / Asset', className: 'col-span-3' },
             { key: 'action', label: 'Action', className: 'col-span-2' },
             { key: 'risk', label: 'Risk Assessment', className: 'col-span-2' },
-            { key: 'date', label: 'Date & Time', className: 'col-span-2' },
-            { key: 'perform', label: '', className: 'col-span-3' },
+            { key: 'allowance', label: 'Allowance', className: 'col-span-3' },
+            { key: 'action', label: '', className: 'col-span-1' },
           ]}
         />
 

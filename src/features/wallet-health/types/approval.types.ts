@@ -5,6 +5,16 @@ export interface SpenderMeta {
   isVerified: boolean
 }
 
+export interface RiskSignal {
+  title: string
+  description: string
+}
+
+export interface WhatWillHappen {
+  label: string
+  tag: string
+}
+
 export interface Approval {
   spender: string
   asset: string
@@ -13,10 +23,15 @@ export interface Approval {
   tokenSymbol: string
   allowance: string
   isUnlimited: boolean
+  action: string
   riskScore: number
   riskLevel: RiskLevel
-  explanation: string
+  explanation?: string
+  riskSignals: RiskSignal[]
+  whatWillHappen: WhatWillHappen[]
   spenderMeta: SpenderMeta
+  chainId: number
+  chainName: string
 }
 
 export interface ApprovalsResponse {
@@ -69,8 +84,20 @@ export interface RevokeEstimateParams {
 }
 
 export interface RevokeEstimate {
-  gasEstimateEth: string
-  gasEstimateUSD: string
-  chainId: number
-  network: string
+  gasUnits: number
+  gasPriceGwei: string
+  ethCost: string
+  usdCost: string
+  calldata: string
+}
+
+export interface RevokeInstructionsResponse {
+  ok: boolean
+  message: string
+  txInstructions: {
+    to: string
+    data: string
+    value: string
+    chainId: number
+  }
 }
