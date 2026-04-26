@@ -1,5 +1,5 @@
 import type { Approval } from '../types/approval.types'
-import type { RevokeTransaction } from '../types/thread-log.types'
+import type { RevokeTransaction, ThreatLogApprovalRevoked } from '../types/thread-log.types'
 import { Modal } from '../../../components/ui/Modal'
 import { RISK_ICON } from '../constants'
 import { AlertTriangle, Calendar, Fuel } from 'lucide-react'
@@ -76,7 +76,7 @@ function ScoreRing({ score, riskLevel }: { score: number; riskLevel: string }) {
 export interface ApprovalInfoModalProps {
   isOpen: boolean
   onClose: () => void
-  approval: Approval
+  approval: Approval | ThreatLogApprovalRevoked
   /** If present, shows revoke-specific info (Gas Fee, Revoke Date) */
   revokeDate?: string
   transaction?: RevokeTransaction

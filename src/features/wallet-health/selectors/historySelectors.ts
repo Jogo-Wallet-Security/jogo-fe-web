@@ -14,9 +14,10 @@ export interface HistoryRowViewModel {
 }
 
 export function revokeEventToRow(e: ThreatLogEvent<'APPROVAL_REVOKED'>): HistoryRowViewModel {
-  const d = e.data
-  const token = (d.tokenAddress ?? e.walletAddress).slice(0, 10)
-  const spender = (d.spender ?? '—').slice(0, 10)
+  const d = e
+  console.log(d)
+  const token = String(d.tokenAddress ?? d.asset ?? e.walletAddress).slice(0, 10)
+  const spender = String(d.spender ?? '—').slice(0, 10)
   return {
     id: e.id,
     iconChar: token[0]?.toUpperCase() ?? '?',
@@ -73,10 +74,16 @@ export function selectFilteredHistoryLogs(args: {
 
   const filteredRevoke = args.revokeLogs.filter((e) => {
     if (!searchLower) return true
-    const d = e.data
     return (
-      d.tokenAddress?.toLowerCase().includes(searchLower) ||
-      d.spender?.toLowerCase().includes(searchLower)
+      String(e.asset ?? '')
+        .toLowerCase()
+        .includes(searchLower) ||
+      String(e.spender ?? '')
+        .toLowerCase()
+        .includes(searchLower) ||
+      String(e.tokenName ?? '')
+        .toLowerCase()
+        .includes(searchLower)
     )
   })
 

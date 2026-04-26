@@ -1,10 +1,16 @@
 import { create } from 'zustand'
-import type { ThreatLogEvent, HistoryTab, TotalThreatLogResponse } from '../types'
+import type {
+  ThreatLogApprovalRevoked,
+  ThreatLogScanComplete,
+  ThreatLogThreatDetected,
+  HistoryTab,
+  TotalThreatLogResponse,
+} from '../types'
 
 interface ThreatLogState {
-  revokeLogs: ThreatLogEvent<'APPROVAL_REVOKED'>[]
-  scanLogs: ThreatLogEvent<'SCAN_COMPLETE'>[]
-  threatLogs: ThreatLogEvent<'THREAT_DETECTED'>[]
+  revokeLogs: ThreatLogApprovalRevoked[]
+  scanLogs: ThreatLogScanComplete[]
+  threatLogs: ThreatLogThreatDetected[]
 
   // Per-type loading / error
   loadingRevoke: boolean
@@ -20,9 +26,9 @@ interface ThreatLogState {
   TotalThreatLog: TotalThreatLogResponse
 
   // Setters
-  setRevokeLogs: (logs: ThreatLogEvent<'APPROVAL_REVOKED'>[]) => void
-  setScanLogs: (logs: ThreatLogEvent<'SCAN_COMPLETE'>[]) => void
-  setThreatLogs: (logs: ThreatLogEvent<'THREAT_DETECTED'>[]) => void
+  setRevokeLogs: (logs: ThreatLogApprovalRevoked[]) => void
+  setScanLogs: (logs: ThreatLogScanComplete[]) => void
+  setThreatLogs: (logs: ThreatLogThreatDetected[]) => void
 
   setLoadingRevoke: (v: boolean) => void
   setLoadingScan: (v: boolean) => void

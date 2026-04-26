@@ -1,16 +1,16 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAccount, useChainId } from 'wagmi'
 import { useThreatLog } from '../hooks/useThreatLog'
+import { useThreatLogStore } from '../store/threatLogStore'
 import { ShieldAlert, ScanLine, Zap } from 'lucide-react'
-import {
-  selectFilteredHistoryLogs,
-  selectHistoryCounts,
-  selectHistoryRowsByTab,
-} from '../selectors/historySelectors'
+import { selectFilteredHistoryLogs, selectHistoryRowsByTab } from '../selectors/historySelectors'
 import { DataListFooter } from './shared/DataListFooter'
 import { DataListHeaderRow } from './shared/DataListHeaderRow'
 import { TableSearchInput } from './shared/TableSearchInput'
 import { HistoryTableRow } from './history/HistoryTableRow'
+import { RevokedApprovalRow } from './history/RevokedApprovalRow'
+import { PAGE_OPTIONS } from '../constants'
+import type { HistoryTab, ThreatLogApprovalRevoked } from '../types'
 
 // ─── Tab config ──────────────────────────────────────────────────────────────
 
@@ -25,13 +25,26 @@ const TAB_CONFIG = [
 export function HistoryLog() {
   const { address } = useAccount()
   const chainId = useChainId()
+
+  // ── Local UI state ──────────────────────────────────────────────────────────
+  const [page, setPage] = useState(1)
+  const [perPage, setPerPage] = useState(10)
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedSearch(search), 300)
+    return () => clearTimeout(handler)
+  }, [search])
 
   const baseParams =
     address && chainId
       ? {
           wallet: address,
           chainId,
+          search: debouncedSearch,
+          page,
+          perPage,
         }
       : null
 
@@ -44,11 +57,17 @@ export function HistoryLog() {
   const isLoading = threatLogState.isLoading
   const error = threatLogState.error
 
+  const handleTabChange = (key: HistoryTab) => {
+    setHistoryTab(key)
+    setPage(1)
+    setSearch('')
+  }
+
   const { filteredRevoke, filteredScans, filteredThreats } = selectFilteredHistoryLogs({
     revokeLogs,
     scanLogs,
     threatLogs,
-    search,
+    search: debouncedSearch,
   })
   const rowViewModels = selectHistoryRowsByTab(activeHistoryTab, {
     filteredRevoke,
@@ -72,7 +91,9 @@ export function HistoryLog() {
     if (activeHistoryTab === 'Revoke Logs') {
       if (filteredRevoke.length === 0)
         return <p className="text-slate-400 text-sm py-10 text-center">No revoke logs found.</p>
-      return rowViewModels.map((row) => <HistoryTableRow key={row.id} {...row} />)
+      return filteredRevoke.map((row) => (
+        <RevokedApprovalRow key={row.id} row={row as unknown as ThreatLogApprovalRevoked} />
+      ))
     }
 
     if (activeHistoryTab === 'Recent Scans') {
@@ -90,14 +111,18 @@ export function HistoryLog() {
     return null
   }
 
-  const { currentCount, totalCount } = selectHistoryCounts(activeHistoryTab, {
-    revokeLogs,
-    scanLogs,
-    threatLogs,
-    filteredRevoke,
-    filteredScans,
-    filteredThreats,
-  })
+  // ── Derived values ──────────────────────────────────────────────────────────
+  const TotalThreatLog = useThreatLogStore((s) => s.TotalThreatLog)
+  const totalItems =
+    activeHistoryTab === 'Revoke Logs'
+      ? TotalThreatLog.totalApprovalRevoked
+      : activeHistoryTab === 'Recent Scans'
+        ? TotalThreatLog.totalScanComplete
+        : TotalThreatLog.totalThreatDetected
+
+  const totalPages = Math.ceil(totalItems / perPage) || 1
+  const startNum = totalItems === 0 ? 0 : (page - 1) * perPage + 1
+  const endNum = Math.min(page * perPage, totalItems)
 
   return (
     <div className="flex flex-col lg:flex-row w-full lg:min-h-[600px] items-stretch relative rounded-3xl overflow-hidden border border-white/40 bg-sky-frost shadow-md text-left">
@@ -114,7 +139,7 @@ export function HistoryLog() {
             return (
               <button
                 key={key}
-                onClick={() => setHistoryTab(key)}
+                onClick={() => handleTabChange(key)}
                 className={`w-full flex items-center justify-center lg:justify-start gap-3 px-4 py-3 rounded-2xl transition-all whitespace-nowrap shrink-0 ${
                   isActive
                     ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20'
@@ -137,42 +162,131 @@ export function HistoryLog() {
             Recent Activity
           </h2>
           <div className="flex items-center gap-2">
-            <TableSearchInput value={search} onChange={setSearch} placeholder="Search..." />
+            <TableSearchInput
+              value={search}
+              onChange={(val) => {
+                setSearch(val)
+                setPage(1)
+              }}
+              placeholder="Search..."
+            />
           </div>
         </div>
 
         {/* Table */}
         <div className="flex-1 flex flex-col min-h-[300px]">
           {/* Column headers */}
-          <DataListHeaderRow
-            columns={[
-              {
-                key: 'site',
-                label: 'Protocol / Site',
-                className: 'col-span-4 lg:col-span-3 pl-2 sm:pl-4',
-              },
-              { key: 'action', label: 'Action', className: 'col-span-4 lg:col-span-3' },
-              { key: 'risk', label: 'Risk Assessment', className: 'col-span-4 lg:col-span-3' },
-              { key: 'time', label: 'Date & Time', className: 'hidden lg:block col-span-2' },
-              {
-                key: 'status',
-                label: 'Status',
-                className: 'hidden lg:block col-span-1 text-right pr-2 sm:pr-4',
-              },
-            ]}
-          />
+          {activeHistoryTab === 'Revoke Logs' ? (
+            <DataListHeaderRow
+              columns={[
+                {
+                  key: 'token',
+                  label: 'Protocol / Asset',
+                  className: 'col-span-3',
+                },
+                { key: 'action', label: 'Action', className: 'col-span-2' },
+                {
+                  key: 'risk',
+                  label: 'Risk Assessment',
+                  className: 'col-span-2',
+                },
+                {
+                  key: 'allowance',
+                  label: 'Allowance',
+                  className: 'col-span-2',
+                },
+                {
+                  key: 'date',
+                  label: 'Date & Time',
+                  className: 'hidden lg:block col-span-2',
+                },
+                { key: 'details', label: '', className: 'col-span-1' },
+              ]}
+            />
+          ) : (
+            <DataListHeaderRow
+              columns={[
+                {
+                  key: 'site',
+                  label: 'Protocol / Site',
+                  className: 'col-span-4 lg:col-span-3 pl-2 sm:pl-4',
+                },
+                {
+                  key: 'action',
+                  label: 'Action',
+                  className: 'col-span-4 lg:col-span-3',
+                },
+                {
+                  key: 'risk',
+                  label: 'Risk Assessment',
+                  className: 'col-span-4 lg:col-span-3',
+                },
+                {
+                  key: 'time',
+                  label: 'Date & Time',
+                  className: 'hidden lg:block col-span-2',
+                },
+                {
+                  key: 'status',
+                  label: 'Status',
+                  className: 'hidden lg:block col-span-1 text-right pr-2 sm:pr-4',
+                },
+              ]}
+            />
+          )}
 
           {/* Rows */}
-          <div className="flex flex-col divide-y divide-slate-100/50 mt-1">{renderRows()}</div>
+          <div className="flex flex-col gap-2 mt-2">{renderRows()}</div>
         </div>
 
-        {/* Footer */}
+        {/* Pagination */}
         <DataListFooter
-          start={currentCount === 0 ? 0 : 1}
-          end={currentCount}
-          total={totalCount}
-          canPrev={false}
-          canNext={false}
+          className="flex items-center justify-between text-xs text-slate-500 pt-3 mt-1 border-t border-white/30"
+          start={totalItems === 0 ? 0 : startNum}
+          end={endNum}
+          total={totalItems}
+          onPrev={() => setPage((p) => Math.max(1, p - 1))}
+          onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+          canPrev={page > 1}
+          canNext={page < totalPages}
+          isLoading={isLoading}
+          rightSlot={
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 border-r border-white/30 pr-3">
+                <span className="text-slate-400">Per page:</span>
+                <select
+                  value={perPage}
+                  onChange={(e) => {
+                    setPerPage(Number(e.target.value))
+                    setPage(1)
+                  }}
+                  className="bg-transparent font-semibold text-slate-700 outline-none cursor-pointer hover:text-slate-900 transition-colors"
+                >
+                  {PAGE_OPTIONS.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1 || isLoading}
+                  className="rounded-lg border border-white/50 bg-white/40 px-3 py-1 hover:bg-white/60 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages || isLoading}
+                  className="rounded-lg border border-white/50 bg-white/40 px-3 py-1 hover:bg-white/60 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          }
         />
       </div>
     </div>
