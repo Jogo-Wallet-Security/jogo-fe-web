@@ -32,4 +32,4 @@ export const PAGE_OPTIONS = [10, 25, 50, 100] as const
 
 // ─── Filter Options ───────────────────────────────────────────────────────────
 
-export const RISK_FILTERS: (RiskLevel | 'All')[] = ['All', 'Critical', 'High', 'Safe', 'Low']
+export const RISK_FILTERS: (RiskLevel | 'All')[] = ['All', 'Critical', 'High', 'Low', 'Safe']

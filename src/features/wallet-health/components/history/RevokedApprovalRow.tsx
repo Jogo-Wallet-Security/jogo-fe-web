@@ -39,7 +39,8 @@ export function RevokedApprovalRow({ row }: { row: ThreatLogApprovalRevoked }) {
             className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium risk-badge-${(row.riskLevel || 'None').toLowerCase()}`}
           >
             {(() => {
-              const RiskIcon = RISK_ICON[row.riskLevel || 'None']
+              const riskKey = (row.riskLevel || 'None') as keyof typeof RISK_ICON
+              const RiskIcon = RISK_ICON[riskKey] || RISK_ICON.None
               return <RiskIcon size={14} />
             })()}
             {row.riskLevel} Risk

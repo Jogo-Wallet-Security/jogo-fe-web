@@ -14,6 +14,8 @@ export interface ThreatDetectedData {
   explanation?: string
   spenderAddress: string
   contractAddress: string
+  riskSignals?: { title: string; description: string }[]
+  whatWillHappen?: { label: string; tag: string }[]
 }
 
 // ─── Revoke transaction info ──────────────────────────────────────────────────

@@ -1,4 +1,9 @@
-import type { HistoryTab, ThreatLogEvent } from '../types'
+import type {
+  HistoryTab,
+  ThreatLogApprovalRevoked,
+  ThreatLogScanComplete,
+  ThreatLogThreatDetected,
+} from '../types'
 
 export interface HistoryRowViewModel {
   id: string
@@ -13,26 +18,24 @@ export interface HistoryRowViewModel {
   statusFlag: string
 }
 
-export function revokeEventToRow(e: ThreatLogEvent<'APPROVAL_REVOKED'>): HistoryRowViewModel {
-  const d = e
-  console.log(d)
-  const token = String(d.tokenAddress ?? d.asset ?? e.walletAddress).slice(0, 10)
-  const spender = String(d.spender ?? '—').slice(0, 10)
+export function revokeEventToRow(e: ThreatLogApprovalRevoked): HistoryRowViewModel {
+  const token = (e.tokenName || e.asset || '—').slice(0, 10)
+  const spender = (e.spender ?? '—').slice(0, 10)
   return {
     id: e.id,
     iconChar: token[0]?.toUpperCase() ?? '?',
     title: `Token: ${token}…`,
     subtitle: `Spender: ${spender}…`,
     actionText: 'Approval Revoked',
-    subActionText: `Chain: ${e.chainId}`,
-    riskLevel: 'None',
+    subActionText: `Chain: ${e.chainName ?? e.chainId}`,
+    riskLevel: e.riskLevel ?? 'None',
     riskSubtext: undefined,
-    dateIso: e.createdAt,
+    dateIso: e.revokeDate ?? e.createdAt ?? '',
     statusFlag: 'success',
   }
 }
 
-export function scanEventToRow(e: ThreatLogEvent<'SCAN_COMPLETE'>): HistoryRowViewModel {
+export function scanEventToRow(e: ThreatLogScanComplete): HistoryRowViewModel {
   const d = e.data
   return {
     id: e.id,
@@ -48,26 +51,26 @@ export function scanEventToRow(e: ThreatLogEvent<'SCAN_COMPLETE'>): HistoryRowVi
   }
 }
 
-export function threatEventToRow(e: ThreatLogEvent<'THREAT_DETECTED'>): HistoryRowViewModel {
+export function threatEventToRow(e: ThreatLogThreatDetected): HistoryRowViewModel {
   const d = e.data
   return {
     id: e.id,
-    iconChar: (d.threatType?.[0] ?? '!').toUpperCase(),
-    title: d.threatType ?? 'Threat Detected',
-    subtitle: d.description?.slice(0, 40) ?? '—',
-    actionText: d.threatType ?? 'Unknown',
-    subActionText: `Severity: ${d.severity ?? '—'}`,
-    riskLevel: d.severity ?? 'None',
+    iconChar: (d.source?.[0] ?? '!').toUpperCase(),
+    title: d.source ?? 'Threat Detected',
+    subtitle: d.explanation?.slice(0, 40) ?? '—',
+    actionText: d.source ?? 'Unknown',
+    subActionText: `Risk: ${d.riskLevel ?? '—'}`,
+    riskLevel: d.riskLevel ?? 'None',
     riskSubtext: undefined,
     dateIso: e.createdAt,
-    statusFlag: d.severity?.toLowerCase() ?? 'warn',
+    statusFlag: d.riskLevel?.toLowerCase() ?? 'warn',
   }
 }
 
 export function selectFilteredHistoryLogs(args: {
-  revokeLogs: ThreatLogEvent<'APPROVAL_REVOKED'>[]
-  scanLogs: ThreatLogEvent<'SCAN_COMPLETE'>[]
-  threatLogs: ThreatLogEvent<'THREAT_DETECTED'>[]
+  revokeLogs: ThreatLogApprovalRevoked[]
+  scanLogs: ThreatLogScanComplete[]
+  threatLogs: ThreatLogThreatDetected[]
   search: string
 }) {
   const searchLower = args.search.toLowerCase()
@@ -75,15 +78,9 @@ export function selectFilteredHistoryLogs(args: {
   const filteredRevoke = args.revokeLogs.filter((e) => {
     if (!searchLower) return true
     return (
-      String(e.asset ?? '')
-        .toLowerCase()
-        .includes(searchLower) ||
-      String(e.spender ?? '')
-        .toLowerCase()
-        .includes(searchLower) ||
-      String(e.tokenName ?? '')
-        .toLowerCase()
-        .includes(searchLower)
+      (e.asset ?? '').toLowerCase().includes(searchLower) ||
+      (e.spender ?? '').toLowerCase().includes(searchLower) ||
+      (e.tokenName ?? '').toLowerCase().includes(searchLower)
     )
   })
 
@@ -96,9 +93,11 @@ export function selectFilteredHistoryLogs(args: {
     if (!searchLower) return true
     const d = e.data
     return (
-      d.threatType?.toLowerCase().includes(searchLower) ||
-      d.description?.toLowerCase().includes(searchLower) ||
-      d.severity?.toLowerCase().includes(searchLower)
+      d.source?.toLowerCase().includes(searchLower) ||
+      d.explanation?.toLowerCase().includes(searchLower) ||
+      d.riskLevel?.toLowerCase().includes(searchLower) ||
+      d.contractAddress?.toLowerCase().includes(searchLower) ||
+      d.spenderAddress?.toLowerCase().includes(searchLower)
     )
   })
 
@@ -117,12 +116,12 @@ export function selectHistoryRowsByTab(
 export function selectHistoryCounts(
   tab: HistoryTab,
   args: {
-    revokeLogs: ThreatLogEvent<'APPROVAL_REVOKED'>[]
-    scanLogs: ThreatLogEvent<'SCAN_COMPLETE'>[]
-    threatLogs: ThreatLogEvent<'THREAT_DETECTED'>[]
-    filteredRevoke: ThreatLogEvent<'APPROVAL_REVOKED'>[]
-    filteredScans: ThreatLogEvent<'SCAN_COMPLETE'>[]
-    filteredThreats: ThreatLogEvent<'THREAT_DETECTED'>[]
+    revokeLogs: ThreatLogApprovalRevoked[]
+    scanLogs: ThreatLogScanComplete[]
+    threatLogs: ThreatLogThreatDetected[]
+    filteredRevoke: ThreatLogApprovalRevoked[]
+    filteredScans: ThreatLogScanComplete[]
+    filteredThreats: ThreatLogThreatDetected[]
   },
 ) {
   const currentCount =

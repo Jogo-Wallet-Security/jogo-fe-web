@@ -17,9 +17,6 @@ export function WalletScoreGauge() {
   const strokeDasharray = `${score}, 100`
 
   const criticalCount = filterCount.totalCritical
-  const highCount = filterCount.totalHigh
-  const criticalPenalty = criticalCount * 15
-  const highPenalty = highCount * 5
 
   return (
     <div className="flex flex-col gap-6">
@@ -61,29 +58,41 @@ export function WalletScoreGauge() {
         </p>
 
         {/* Score Impact breakdown */}
-        <div className="rounded-xl border border-white/50 bg-white/60 backdrop-blur-md p-3 mb-4 space-y-2">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
-            Score Impact
-          </p>
-          {criticalCount > 0 && (
-            <div className="flex items-center justify-between text-xs">
-              <span className="flex items-center gap-1.5 text-slate-600">
-                <span className="h-2 w-2 rounded-full bg-red-500 inline-block" />
-                {criticalCount} Critical Approval{criticalCount > 1 ? 's' : ''}
-              </span>
-              <span className="font-bold text-red-500">-{criticalPenalty}</span>
-            </div>
-          )}
-          {highCount > 0 && (
-            <div className="flex items-center justify-between text-xs">
-              <span className="flex items-center gap-1.5 text-slate-600">
-                <span className="h-2 w-2 rounded-full bg-orange-400 inline-block" />
-                {highCount} High Risk
-              </span>
-              <span className="font-bold text-orange-500">-{highPenalty}</span>
-            </div>
-          )}
-        </div>
+        {walletScore?.scoreImpact && walletScore.scoreImpact.length > 0 && (
+          <div className="rounded-xl border border-white/50 bg-white/60 backdrop-blur-md p-3 mb-4 space-y-2">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
+              Score Impact
+            </p>
+            {walletScore.scoreImpact.map((impact, index) => {
+              // Determine dot color based on reason
+              let dotColor = 'bg-slate-400'
+              let textColor = 'text-slate-500'
+              if (impact.reason.toLowerCase().includes('critical')) {
+                dotColor = 'bg-red-500'
+                textColor = 'text-red-500'
+              } else if (impact.reason.toLowerCase().includes('high')) {
+                dotColor = 'bg-orange-400'
+                textColor = 'text-orange-500'
+              } else if (impact.reason.toLowerCase().includes('unlimited')) {
+                dotColor = 'bg-yellow-400'
+                textColor = 'text-yellow-600'
+              } else if (impact.reason.toLowerCase().includes('low')) {
+                dotColor = 'bg-yellow-200'
+                textColor = 'text-yellow-500'
+              }
+
+              return (
+                <div key={index} className="flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-1.5 text-slate-600">
+                    <span className={`h-2 w-2 rounded-full ${dotColor} inline-block`} />
+                    {impact.count} {impact.reason}
+                  </span>
+                  <span className={`font-bold ${textColor}`}>-{impact.penalty}</span>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
       {/* Critical Risk Alert */}
       {criticalCount > 0 && (

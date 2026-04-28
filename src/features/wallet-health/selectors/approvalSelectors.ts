@@ -31,5 +31,6 @@ export function selectWalletScoreFromResponse(data: ApprovalsResponse | null): W
     walletSecurityScore: data.walletSecurityScore,
     grade: data.grade,
     gradeColor: data.gradeColor,
+    scoreImpact: data.scoreImpact,
   }
 }

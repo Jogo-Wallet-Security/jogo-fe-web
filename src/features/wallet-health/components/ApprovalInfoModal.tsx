@@ -90,7 +90,7 @@ export function ApprovalInfoModal({
   transaction,
 }: ApprovalInfoModalProps) {
   const riskLevel = approval.riskLevel || 'Safe'
-  const RiskIcon = RISK_ICON[riskLevel] ?? RISK_ICON.Safe
+  const RiskIcon = RISK_ICON[riskLevel as keyof typeof RISK_ICON] ?? RISK_ICON.Safe
   const signalCount = approval.riskSignals?.length ?? 0
 
   return (

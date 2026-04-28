@@ -54,6 +54,12 @@ export default function Navbar() {
                       Mempool Monitor
                     </button>
                     <button
+                      onClick={() => navigate('/pricing')}
+                      className={`cursor-pointer flex items-center gap-1.5 transition-colors ${location.pathname.includes('/pricing') ? 'text-stone font-bold' : 'text-slate hover:text-stone hover:font-bold'}`}
+                    >
+                      Pricing
+                    </button>
+                    <button
                       onClick={() => navigate('/settings')}
                       className={`cursor-pointer flex items-center gap-1.5 transition-colors ${location.pathname.includes('/settings') ? 'text-stone font-bold' : 'text-slate hover:text-stone'}`}
                     >

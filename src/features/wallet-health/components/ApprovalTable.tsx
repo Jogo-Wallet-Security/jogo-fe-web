@@ -95,13 +95,13 @@ export function ApprovalTable() {
                 onClick={() => handleSetQualityFilter(filter)}
                 className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all border ${
                   active
-                    ? 'bg-slate-800 text-white border-slate-800 shadow-md'
+                    ? 'bg-slate-300 text-slate-800 border-slate-300 shadow-md'
                     : 'bg-white/60 text-slate-600 border-white/50 hover:bg-white/80 backdrop-blur-sm'
                 }`}
               >
                 <span className={`h-1.5 w-1.5 rounded-full ${RISK_DOT_COLOR[filter]}`} />
                 {filter}
-                <span className={`ml-0.5 ${active ? 'text-white/70' : 'text-slate-400'}`}>
+                <span className={`ml-0.5 ${active ? 'text-slate-800/70' : 'text-slate-400'}`}>
                   {count ?? 0}
                 </span>
               </button>

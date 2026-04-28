@@ -34,6 +34,12 @@ export interface Approval {
   chainName: string
 }
 
+export interface ScoreImpact {
+  reason: string
+  penalty: number
+  count: number
+}
+
 export interface ApprovalsResponse {
   approvals: Approval[]
   totalActive: number
@@ -50,12 +56,14 @@ export interface ApprovalsResponse {
   grade: string
   gradeColor: string
   signals: string[]
+  scoreImpact?: ScoreImpact[]
 }
 
 export interface WalletScore {
   walletSecurityScore: number
   grade: string
   gradeColor: string
+  scoreImpact?: ScoreImpact[]
 }
 
 export interface TotalFilter {
