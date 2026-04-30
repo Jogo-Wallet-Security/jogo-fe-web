@@ -3,7 +3,9 @@ import { useAccount } from 'wagmi'
 import LandingPage from './pages/LandingPage'
 import WalletHealth from './pages/WalletHealth'
 import MempoolMonitor from './pages/MempoolMonitor'
+import PricingPage from './pages/PricingPage'
 import AuthGuard from './layouts/AuthGuard'
+import { useExtensionWalletSync } from './hooks/useExtensionWalletSync'
 
 function CatchAllRoute() {
   const { isConnected, isConnecting, isReconnecting } = useAccount()
@@ -18,6 +20,9 @@ function CatchAllRoute() {
 }
 
 export default function App() {
+  // Sync connected wallet address to the Jogo browser extension
+  useExtensionWalletSync()
+
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
@@ -34,6 +39,14 @@ export default function App() {
         element={
           <AuthGuard>
             <MempoolMonitor />
+          </AuthGuard>
+        }
+      />
+      <Route
+        path="/pricing"
+        element={
+          <AuthGuard>
+            <PricingPage />
           </AuthGuard>
         }
       />

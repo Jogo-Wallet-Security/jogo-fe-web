@@ -1,21 +1,25 @@
 import { motion } from 'motion/react'
-import { useWalletHealth } from '../hooks/useWalletHealth'
 import { AlertTriangle, ShieldOff } from 'lucide-react'
+import { useApprovalsStore } from '../store/approvalStore'
+import {
+  selectFilterCountFromResponse,
+  selectWalletScoreFromResponse,
+} from '../selectors/approvalSelectors'
 
 export function WalletScoreGauge() {
-  const { walletScore, approvals } = useWalletHealth()
-  const score = walletScore.score
+  const data = useApprovalsStore((state) => state.data)
+  const walletScore = selectWalletScoreFromResponse(data)
+  const filterCount = selectFilterCountFromResponse(data)
+  const score = walletScore?.walletSecurityScore
 
   const scoreColor = score < 50 ? '#f97316' : score < 80 ? '#f59e0b' : '#10b981'
+  const statusLabel = score < 50 ? 'Attention Needed' : score < 80 ? 'Beware' : 'All Safe!'
   const strokeDasharray = `${score}, 100`
 
-  const criticalCount = approvals.filter((a) => a.riskLevel === 'Critical').length
-  const highCount = approvals.filter((a) => a.riskLevel === 'High').length
-  const criticalPenalty = criticalCount * 15
-  const highPenalty = highCount * 5
+  const criticalCount = filterCount.totalCritical
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <div className="flex flex-col rounded-3xl border border-white/40 bg-white/20 backdrop-blur-md shadow-sm  p-6 ">
         {/* Label */}
         <p className="text-xs font-semibold uppercase tracking-widest text-slate-600 text-center mb-4">
@@ -24,7 +28,7 @@ export function WalletScoreGauge() {
 
         {/* Gauge */}
         <div className="relative mx-auto mb-4 h-36 w-36">
-          <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90">
+          <svg viewBox="0 0 36 36" className="h-full w-full rotate-120">
             <path
               stroke="#e2e8f0"
               strokeWidth="3"
@@ -48,35 +52,47 @@ export function WalletScoreGauge() {
         </div>
 
         {/* Status label */}
-        <p className="text-center font-semibold text-slate-700 mb-1">Attention Needed</p>
+        <p className="text-center font-semibold text-slate-700 mb-1">{statusLabel}</p>
         <p className="text-center text-xs text-slate-500 mb-5 leading-relaxed">
           Your wallet security score is impacted by active approvals.
         </p>
 
         {/* Score Impact breakdown */}
-        <div className="rounded-xl border border-white/50 bg-white/60 backdrop-blur-md p-3 mb-4 space-y-2">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
-            Score Impact
-          </p>
-          {criticalCount > 0 && (
-            <div className="flex items-center justify-between text-xs">
-              <span className="flex items-center gap-1.5 text-slate-600">
-                <span className="h-2 w-2 rounded-full bg-red-500 inline-block" />
-                {criticalCount} Critical Approval{criticalCount > 1 ? 's' : ''}
-              </span>
-              <span className="font-bold text-red-500">-{criticalPenalty}</span>
-            </div>
-          )}
-          {highCount > 0 && (
-            <div className="flex items-center justify-between text-xs">
-              <span className="flex items-center gap-1.5 text-slate-600">
-                <span className="h-2 w-2 rounded-full bg-orange-400 inline-block" />
-                {highCount} High Risk
-              </span>
-              <span className="font-bold text-orange-500">-{highPenalty}</span>
-            </div>
-          )}
-        </div>
+        {walletScore?.scoreImpact && walletScore.scoreImpact.length > 0 && (
+          <div className="rounded-xl border border-white/50 bg-white/60 backdrop-blur-md p-3 mb-4 space-y-2">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
+              Score Impact
+            </p>
+            {walletScore.scoreImpact.map((impact, index) => {
+              // Determine dot color based on reason
+              let dotColor = 'bg-slate-400'
+              let textColor = 'text-slate-500'
+              if (impact.reason.toLowerCase().includes('critical')) {
+                dotColor = 'bg-red-500'
+                textColor = 'text-red-500'
+              } else if (impact.reason.toLowerCase().includes('high')) {
+                dotColor = 'bg-orange-400'
+                textColor = 'text-orange-500'
+              } else if (impact.reason.toLowerCase().includes('unlimited')) {
+                dotColor = 'bg-yellow-400'
+                textColor = 'text-yellow-600'
+              } else if (impact.reason.toLowerCase().includes('low')) {
+                dotColor = 'bg-yellow-200'
+                textColor = 'text-yellow-500'
+              }
+
+              return (
+                <div key={index} className="flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-1.5 text-slate-600">
+                    <span className={`h-2 w-2 rounded-full ${dotColor} inline-block`} />
+                    {impact.count} {impact.reason}
+                  </span>
+                  <span className={`font-bold ${textColor}`}>-{impact.penalty}</span>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
       {/* Critical Risk Alert */}
       {criticalCount > 0 && (

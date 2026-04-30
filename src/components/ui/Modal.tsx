@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import { X } from 'lucide-react'
 
@@ -7,10 +8,13 @@ export interface ModalProps {
   onClose: () => void
   title: string
   children: ReactNode
+  maxWidth?: string
 }
 
-export function Modal({ isOpen, onClose, title, children }: ModalProps) {
-  return (
+export function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-md' }: ModalProps) {
+  if (typeof document === 'undefined') return null
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <>
@@ -27,7 +31,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="pointer-events-auto relative w-full max-w-md overflow-hidden rounded-[24px] border border-white/60 bg-white/70 backdrop-blur-xl p-6 shadow-[0_8px_32px_rgba(0,0,0,0.08)] backdrop-saturate-150"
+              className={`pointer-events-auto relative w-full ${maxWidth} overflow-hidden rounded-[24px] border border-white/60 bg-white/70 backdrop-blur-xl p-6 shadow-[0_8px_32px_rgba(0,0,0,0.08)] backdrop-saturate-150`}
             >
               {/* Soft top gradient */}
               <div className="absolute inset-0 bg-gradient-to-br from-blue-100/40 via-transparent to-transparent pointer-events-none" />
@@ -48,6 +52,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
           </div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   )
 }

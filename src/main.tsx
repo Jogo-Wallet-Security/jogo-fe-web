@@ -1,5 +1,5 @@
-import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+
 import './index.css'
 import App from './App.tsx'
 import { BrowserRouter } from 'react-router'
@@ -69,15 +69,13 @@ const jogoTheme: Theme = {
 }
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <WagmiProvider config={wagmiConfig}>
-      <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider theme={jogoTheme}>
-          <BrowserRouter>
-            <App />
-          </BrowserRouter>
-        </RainbowKitProvider>
-      </QueryClientProvider>
-    </WagmiProvider>
-  </StrictMode>,
+  <WagmiProvider config={wagmiConfig}>
+    <QueryClientProvider client={queryClient}>
+      <RainbowKitProvider theme={jogoTheme}>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </RainbowKitProvider>
+    </QueryClientProvider>
+  </WagmiProvider>,
 )

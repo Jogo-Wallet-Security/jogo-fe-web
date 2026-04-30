@@ -1,0 +1,57 @@
+[
+  {
+    "type": "event",
+    "name": "SubscriptionPurchased",
+    "inputs": [
+      { "indexed": true, "internalType": "address", "name": "wallet", "type": "address" },
+      { "indexed": true, "internalType": "uint8", "name": "tier", "type": "uint8" },
+      { "indexed": false, "internalType": "uint256", "name": "expiresAt", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "pricePaid", "type": "uint256" }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "getSubscription",
+    "stateMutability": "view",
+    "inputs": [{ "internalType": "address", "name": "wallet", "type": "address" }],
+    "outputs": [
+      { "internalType": "uint8", "name": "tier", "type": "uint8" },
+      { "internalType": "uint256", "name": "expiresAt", "type": "uint256" },
+      { "internalType": "bool", "name": "isActive", "type": "bool" }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "isSubscribed",
+    "stateMutability": "view",
+    "inputs": [
+      { "internalType": "address", "name": "wallet", "type": "address" },
+      { "internalType": "uint8", "name": "minTier", "type": "uint8" }
+    ],
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }]
+  },
+  {
+    "type": "function",
+    "name": "getPrices",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [
+      { "internalType": "uint256", "name": "plusPrice", "type": "uint256" },
+      { "internalType": "uint256", "name": "proPrice", "type": "uint256" }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "SUBSCRIPTION_DURATION",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }]
+  },
+  {
+    "type": "function",
+    "name": "subscribe",
+    "stateMutability": "payable",
+    "inputs": [{ "internalType": "uint8", "name": "tier", "type": "uint8" }],
+    "outputs": []
+  }
+]

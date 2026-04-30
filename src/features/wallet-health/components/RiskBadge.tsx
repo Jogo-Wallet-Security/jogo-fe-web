@@ -1,7 +1,14 @@
-import { ShieldAlert, ShieldCheck, AlertTriangle, AlertCircle } from 'lucide-react'
+import { ShieldAlert, ShieldCheck, AlertTriangle } from 'lucide-react'
 import type { RiskLevel } from '../types'
 
-const riskConfig = {
+type RiskConfig = {
+  bg: string
+  border: string
+  text: string
+  icon: React.ElementType
+}
+
+const riskConfig: Record<RiskLevel, RiskConfig> = {
   Critical: {
     bg: 'bg-red-500/10',
     border: 'border-red-500/30',
@@ -14,19 +21,13 @@ const riskConfig = {
     text: 'text-orange-500',
     icon: AlertTriangle,
   },
-  Medium: {
-    bg: 'bg-yellow-500/10',
-    border: 'border-yellow-500/30',
-    text: 'text-yellow-600',
-    icon: AlertCircle,
-  },
   Low: {
     bg: 'bg-blue-500/10',
     border: 'border-blue-500/30',
     text: 'text-blue-500',
     icon: ShieldCheck,
   },
-  None: {
+  Safe: {
     bg: 'bg-green-500/10',
     border: 'border-green-500/30',
     text: 'text-green-500',

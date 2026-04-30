@@ -1,134 +1,293 @@
-import { useState } from 'react'
-import { useWalletHealth } from '../hooks/useWalletHealth'
-import type { HistoryEvent } from '../types'
-import { Search, SlidersHorizontal } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useAccount, useChainId } from 'wagmi'
+import { useThreatLog } from '../hooks/useThreatLog'
+import { useThreatLogStore } from '../store/threatLogStore'
+import { ShieldAlert, ScanLine, Zap } from 'lucide-react'
+import { selectFilteredHistoryLogs, selectHistoryRowsByTab } from '../selectors/historySelectors'
+import { DataListFooter } from './shared/DataListFooter'
+import { DataListHeaderRow } from './shared/DataListHeaderRow'
+import { TableSearchInput } from './shared/TableSearchInput'
+import { HistoryTableRow } from './history/HistoryTableRow'
+import { RevokedApprovalRow } from './history/RevokedApprovalRow'
+import { PAGE_OPTIONS } from '../constants'
+import type { HistoryTab, ThreatLogApprovalRevoked } from '../types'
 
-// const TABS: HistoryTab[] = ['All', 'Revoke Logs', 'Recent Scans']
+// ─── Tab config ──────────────────────────────────────────────────────────────
 
-const riskBadge: Record<string, string> = {
-  Critical: 'bg-red-100 text-red-600 border-red-200',
-  High: 'bg-orange-100 text-orange-600 border-orange-200',
-  Medium: 'bg-yellow-100 text-yellow-600 border-yellow-200',
-  Low: 'bg-green-100 text-green-600 border-green-200',
-  None: 'bg-slate-100 text-slate-500 border-slate-200',
-}
+const TAB_CONFIG = [
+  { key: 'Revoke Logs' as const, label: 'Revoke Logs', Icon: ShieldAlert },
+  { key: 'Recent Scans' as const, label: 'Recent Scans', Icon: ScanLine },
+  { key: 'Recent Threats' as const, label: 'Recent Threats', Icon: Zap },
+]
 
-function formatDate(iso: string) {
-  const d = new Date(iso)
-  return (
-    d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
-    ', ' +
-    d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-  )
-}
+// ─── Main component ──────────────────────────────────────────────────────────
 
 export function HistoryLog() {
-  const { history, activeHistoryTab } = useWalletHealth()
-  const [search, setSearch] = useState('')
+  const { address } = useAccount()
+  const chainId = useChainId()
 
-  const filtered = history
-    .filter((h: HistoryEvent) => {
-      if (activeHistoryTab === 'Revoke Logs') return h.action === 'Revoke'
-      if (activeHistoryTab === 'Recent Scans') return h.action === 'Scan'
-      return true
-    })
-    .filter(
-      (h: HistoryEvent) =>
-        !search ||
-        h.protocol?.toLowerCase().includes(search.toLowerCase()) ||
-        h.description.toLowerCase().includes(search.toLowerCase()),
-    )
+  // ── Local UI state ──────────────────────────────────────────────────────────
+  const [page, setPage] = useState(1)
+  const [perPage, setPerPage] = useState(10)
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedSearch(search), 300)
+    return () => clearTimeout(handler)
+  }, [search])
+
+  const baseParams =
+    address && chainId
+      ? {
+          wallet: address,
+          chainId,
+          search: debouncedSearch,
+          page,
+          perPage,
+        }
+      : null
+
+  const threatLogState = useThreatLog(baseParams)
+  const revokeLogs = threatLogState.revokeLogs ?? []
+  const scanLogs = threatLogState.scanLogs ?? []
+  const threatLogs = threatLogState.threatLogs ?? []
+  const activeHistoryTab = threatLogState.activeHistoryTab
+  const setHistoryTab = threatLogState.setHistoryTab
+  const isLoading = threatLogState.isLoading
+  const error = threatLogState.error
+
+  const handleTabChange = (key: HistoryTab) => {
+    setHistoryTab(key)
+    setPage(1)
+    setSearch('')
+  }
+
+  const { filteredRevoke, filteredScans, filteredThreats } = selectFilteredHistoryLogs({
+    revokeLogs,
+    scanLogs,
+    threatLogs,
+    search: debouncedSearch,
+  })
+  const rowViewModels = selectHistoryRowsByTab(activeHistoryTab, {
+    filteredRevoke,
+    filteredScans,
+    filteredThreats,
+  })
+
+  const renderRows = () => {
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center py-16">
+          <div className="w-6 h-6 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
+        </div>
+      )
+    }
+
+    if (error) {
+      return <p className="text-red-400 text-sm py-10 text-center">{error}</p>
+    }
+
+    if (activeHistoryTab === 'Revoke Logs') {
+      if (filteredRevoke.length === 0)
+        return <p className="text-slate-400 text-sm py-10 text-center">No revoke logs found.</p>
+      return filteredRevoke.map((row) => (
+        <RevokedApprovalRow key={row.id} row={row as unknown as ThreatLogApprovalRevoked} />
+      ))
+    }
+
+    if (activeHistoryTab === 'Recent Scans') {
+      if (filteredScans.length === 0)
+        return <p className="text-slate-400 text-sm py-10 text-center">No scan logs found.</p>
+      return rowViewModels.map((row) => <HistoryTableRow key={row.id} {...row} />)
+    }
+
+    if (activeHistoryTab === 'Recent Threats') {
+      if (filteredThreats.length === 0)
+        return <p className="text-slate-400 text-sm py-10 text-center">No threat logs found.</p>
+      return rowViewModels.map((row) => <HistoryTableRow key={row.id} {...row} />)
+    }
+
+    return null
+  }
+
+  // ── Derived values ──────────────────────────────────────────────────────────
+  const TotalThreatLog = useThreatLogStore((s) => s.TotalThreatLog)
+  const totalItems =
+    activeHistoryTab === 'Revoke Logs'
+      ? TotalThreatLog.totalApprovalRevoked
+      : activeHistoryTab === 'Recent Scans'
+        ? TotalThreatLog.totalScanComplete
+        : TotalThreatLog.totalThreatDetected
+
+  const totalPages = Math.ceil(totalItems / perPage) || 1
+  const startNum = totalItems === 0 ? 0 : (page - 1) * perPage + 1
+  const endNum = Math.min(page * perPage, totalItems)
 
   return (
-    <div className="rounded-2xl border border-white/50 bg-white/60 backdrop-blur-md shadow-sm p-6">
-      <h2 className="text-lg font-bold text-slate-800 mb-1">Recent Activity</h2>
-
-      {/* Search + filter row */}
-      <div className="flex items-center gap-2 mt-4 mb-5">
-        <div className="flex-1 flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2">
-          <Search size={13} className="text-slate-400 flex-shrink-0" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search..."
-            className="flex-1 bg-transparent text-xs text-slate-700 outline-none placeholder:text-slate-400"
-          />
+    <div className="flex flex-col lg:flex-row w-full lg:min-h-[600px] items-stretch relative rounded-3xl overflow-hidden border border-white/40 bg-sky-frost shadow-md text-left">
+      {/* Sidebar / Tab nav */}
+      <div className="flex flex-col w-full lg:w-64 items-start gap-2 p-6 bg-white/40 border-b lg:border-b-0 lg:border-r border-white/20 backdrop-blur-md shrink-0">
+        <div className="pb-4 w-full">
+          <div className="font-semibold text-slate-400 text-xs tracking-widest uppercase">
+            History Log
+          </div>
         </div>
-        <button className="rounded-lg border border-slate-200 bg-white p-2 hover:bg-slate-50 transition-colors">
-          <SlidersHorizontal size={14} className="text-slate-500" />
-        </button>
+        <div className="flex flex-row lg:flex-col gap-2 w-full overflow-x-auto pb-2 lg:pb-0">
+          {TAB_CONFIG.map(({ key, label, Icon }) => {
+            const isActive = activeHistoryTab === key
+            return (
+              <button
+                key={key}
+                onClick={() => handleTabChange(key)}
+                className={`w-full flex items-center justify-center lg:justify-start gap-3 px-4 py-3 rounded-2xl transition-all whitespace-nowrap shrink-0 ${
+                  isActive
+                    ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20'
+                    : 'text-slate-600 hover:bg-white/50'
+                }`}
+              >
+                <Icon size={16} className={isActive ? 'text-white' : 'text-slate-500'} />
+                <span className="font-medium text-sm">{label}</span>
+              </button>
+            )
+          })}
+        </div>
       </div>
 
-      {/* Table header */}
-      <div className="grid grid-cols-12 gap-2 pb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 border-b border-slate-200/60">
-        <div className="col-span-3">Protocol / Site</div>
-        <div className="col-span-3">Action</div>
-        <div className="col-span-2">Risk Assessment</div>
-        <div className="col-span-2">Date & Time</div>
-        <div className="col-span-2 text-right">Status</div>
-      </div>
+      {/* Main content */}
+      <div className="flex flex-col flex-1 min-w-0 p-6 sm:p-8">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <h2 className="text-xl font-semibold text-slate-800 whitespace-nowrap">
+            Recent Activity
+          </h2>
+          <div className="flex items-center gap-2">
+            <TableSearchInput
+              value={search}
+              onChange={(val) => {
+                setSearch(val)
+                setPage(1)
+              }}
+              placeholder="Search..."
+            />
+          </div>
+        </div>
 
-      {/* Rows */}
-      <div className="space-y-0">
-        {filtered.length === 0 ? (
-          <p className="text-center text-sm text-slate-400 py-8">No activity found.</p>
-        ) : (
-          filtered.map((item: HistoryEvent) => (
-            <div
-              key={item.id}
-              className="grid grid-cols-12 items-center gap-2 py-3 border-b border-slate-100 hover:bg-white/40 transition-colors"
-            >
-              <div className="col-span-3 flex items-center gap-2 min-w-0">
-                <div className="h-7 w-7 rounded-full bg-slate-200 flex-shrink-0 flex items-center justify-center text-[10px] font-bold text-slate-500">
-                  {item.protocol?.[0] ?? '?'}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-slate-800 truncate">
-                    {item.protocol ?? 'Unknown'}
-                  </p>
-                  <p className="text-[10px] text-slate-400 truncate">{item.site ?? '-'}</p>
-                </div>
+        {/* Table */}
+        <div className="flex-1 flex flex-col min-h-[300px]">
+          {/* Column headers */}
+          {activeHistoryTab === 'Revoke Logs' ? (
+            <DataListHeaderRow
+              columns={[
+                {
+                  key: 'token',
+                  label: 'Protocol / Asset',
+                  className: 'col-span-3',
+                },
+                { key: 'action', label: 'Action', className: 'col-span-2' },
+                {
+                  key: 'risk',
+                  label: 'Risk Assessment',
+                  className: 'col-span-2',
+                },
+                {
+                  key: 'allowance',
+                  label: 'Allowance',
+                  className: 'col-span-2',
+                },
+                {
+                  key: 'date',
+                  label: 'Date & Time',
+                  className: 'hidden lg:block col-span-2',
+                },
+                { key: 'details', label: '', className: 'col-span-1' },
+              ]}
+            />
+          ) : (
+            <DataListHeaderRow
+              columns={[
+                {
+                  key: 'site',
+                  label: 'Protocol / Site',
+                  className: 'col-span-4 lg:col-span-3 pl-2 sm:pl-4',
+                },
+                {
+                  key: 'action',
+                  label: 'Action',
+                  className: 'col-span-4 lg:col-span-3',
+                },
+                {
+                  key: 'risk',
+                  label: 'Risk Assessment',
+                  className: 'col-span-4 lg:col-span-3',
+                },
+                {
+                  key: 'time',
+                  label: 'Date & Time',
+                  className: 'hidden lg:block col-span-2',
+                },
+                {
+                  key: 'status',
+                  label: 'Status',
+                  className: 'hidden lg:block col-span-1 text-right pr-2 sm:pr-4',
+                },
+              ]}
+            />
+          )}
+
+          {/* Rows */}
+          <div className="flex flex-col gap-2 mt-2">{renderRows()}</div>
+        </div>
+
+        {/* Pagination */}
+        <DataListFooter
+          className="flex items-center justify-between text-xs text-slate-500 pt-3 mt-1 border-t border-white/30"
+          start={totalItems === 0 ? 0 : startNum}
+          end={endNum}
+          total={totalItems}
+          onPrev={() => setPage((p) => Math.max(1, p - 1))}
+          onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+          canPrev={page > 1}
+          canNext={page < totalPages}
+          isLoading={isLoading}
+          rightSlot={
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 border-r border-white/30 pr-3">
+                <span className="text-slate-400">Per page:</span>
+                <select
+                  value={perPage}
+                  onChange={(e) => {
+                    setPerPage(Number(e.target.value))
+                    setPage(1)
+                  }}
+                  className="bg-transparent font-semibold text-slate-700 outline-none cursor-pointer hover:text-slate-900 transition-colors"
+                >
+                  {PAGE_OPTIONS.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
               </div>
-              <div className="col-span-3">
-                <p className="text-xs text-slate-600">{item.description}</p>
-              </div>
-              <div className="col-span-2">
-                {item.riskLevel ? (
-                  <span
-                    className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${riskBadge[item.riskLevel]}`}
-                  >
-                    {item.riskLevel} Risk
-                  </span>
-                ) : (
-                  <span className="text-xs text-slate-400">—</span>
-                )}
-              </div>
-              <div className="col-span-2">
-                <p className="text-[10px] text-slate-500">{formatDate(item.timestamp)}</p>
-              </div>
-              <div className="col-span-2 flex justify-end">
-                <button className="rounded-lg border border-slate-200 bg-white hover:bg-slate-50 px-2.5 py-1 text-[10px] font-semibold text-slate-600 transition-colors">
-                  Details
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1 || isLoading}
+                  className="rounded-lg border border-white/50 bg-white/40 px-3 py-1 hover:bg-white/60 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages || isLoading}
+                  className="rounded-lg border border-white/50 bg-white/40 px-3 py-1 hover:bg-white/60 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Next
                 </button>
               </div>
             </div>
-          ))
-        )}
-      </div>
-
-      {/* Pagination */}
-      <div className="mt-4 flex items-center justify-between text-xs text-slate-400 pt-3 border-t border-slate-100">
-        <span>
-          Showing 1–{filtered.length} of {history.length} results
-        </span>
-        <div className="flex gap-2">
-          <button className="rounded-lg border border-slate-200 px-3 py-1 hover:bg-slate-50 text-slate-600 transition-colors">
-            Previous
-          </button>
-          <button className="rounded-lg border border-slate-200 px-3 py-1 hover:bg-slate-50 text-slate-600 transition-colors">
-            Next
-          </button>
-        </div>
+          }
+        />
       </div>
     </div>
   )
